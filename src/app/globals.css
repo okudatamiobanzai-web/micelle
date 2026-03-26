@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #ffffff;
+  --color-foreground: #1a1a1a;
+  --color-surface: #F7F6F2;
+
+  /* Primary (green / milk) */
+  --color-primary-50: #E8F6F0;
+  --color-primary-100: #9FE1CB;
+  --color-primary-200: #5DCAA5;
+  --color-primary-400: #1D9E75;
+  --color-primary-600: #0F6E56;
+  --color-primary-800: #085041;
+
+  /* Amber (相談) */
+  --color-amber-50: #FDF3E0;
+  --color-amber-400: #EF9F27;
+  --color-amber-800: #633806;
+
+  /* Coral (子ども / 警告) */
+  --color-coral-50: #FBF0EC;
+  --color-coral-400: #D85A30;
+  --color-coral-800: #712B13;
+
+  /* Purple (制作) */
+  --color-purple-50: #F0EFFE;
+  --color-purple-400: #7F77DD;
+  --color-purple-800: #3C3489;
+
+  /* Blue (送迎) */
+  --color-blue-50: #EBF4FC;
+  --color-blue-400: #378ADD;
+  --color-blue-800: #0C447C;
+
+  /* Gray */
+  --color-gray-50: #F4F3EE;
+  --color-gray-100: #E0DED6;
+  --color-gray-200: #C5C3BA;
+  --color-gray-400: #888780;
+  --color-gray-600: #5F5E5A;
+  --color-gray-800: #3A3A38;
+
+  /* Skill (gold) */
+  --color-skill-50: #FFF8ED;
+  --color-skill-100: #FFE8B8;
+  --color-skill-200: #FFD580;
+  --color-skill-400: #E8A317;
+  --color-skill-600: #B07D0F;
+  --color-skill-800: #5C4108;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes orb-pulse {
+  0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+/* Hide scrollbar */
+* {
+  scrollbar-width: none;
+}
+::-webkit-scrollbar {
+  display: none;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
 }
