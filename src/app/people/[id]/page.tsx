@@ -4,10 +4,13 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { Badge } from "@/components/ui/Badge";
+import { SkillBadge } from "@/components/ui/SkillBadge";
 import { GiftedTags } from "@/components/ui/GiftedTags";
 import { GiftTagModal } from "@/components/ui/GiftTagModal";
-import { SKILL_ICON } from "@/lib/constants";
-import { people, posts } from "@/lib/sample-data";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { StatsGrid } from "@/components/profile/StatsGrid";
+import { PortfolioSection } from "@/components/profile/PortfolioSection";
+import { people, posts, samplePortfolios } from "@/lib/sample-data";
 
 export default function PersonDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params);
@@ -26,16 +29,12 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
     );
   }
 
-  // Posts by this person (skills)
   const skillPosts = posts.filter((p) => p.type === "skill" && p.personId === person.id);
-  // Posts this person helped
-  const helpedPosts = posts.filter(
-    (p) => p.report && p.report.helperId === person.id
-  );
+  const helpedPosts = posts.filter((p) => p.report && p.report.helperId === person.id);
+  const portfolioItems = samplePortfolios[person.id] || [];
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <div className="px-4 pt-4 pb-4 border-b border-gray-100">
         <button
           onClick={() => router.back()}
@@ -43,59 +42,30 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
         >
           ← 戻る
         </button>
-
-        {/* Profile card */}
-        <div className="flex items-center gap-3.5">
-          <Orb ch={person.ch} dots={person.dots} size={64} colorClass={person.colorClass} pulse />
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl font-bold text-foreground">{person.name}</span>
-              {person.milkComment && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">
-                  milk紹介
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-400">{person.area}</div>
-            {person.sns?.instagram && (
-              <div className="text-xs text-blue-400 mt-0.5">@{person.sns.instagram}</div>
-            )}
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="flex gap-0 mt-4 bg-surface rounded-xl overflow-hidden">
-          {[
-            { label: "お手伝い", value: person.completedHelp },
-            { label: "依頼", value: person.completedReq },
-            { label: "紹介", value: person.referrals },
-            { label: "タグ", value: person.gifted.length },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="flex-1 text-center py-3 border-r border-gray-100 last:border-r-0"
-            >
-              <div className="text-lg font-bold text-primary-600">{s.value}</div>
-              <div className="text-[10px] text-gray-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <ProfileHeader
+          name={person.name}
+          ch={person.ch}
+          dots={person.dots}
+          colorClass={person.colorClass}
+          area={person.area}
+          isMilkEndorsed={!!person.milkComment}
+          sns={person.sns}
+        />
+        <StatsGrid
+          completedHelp={person.completedHelp}
+          completedReq={person.completedReq}
+          referrals={person.referrals}
+          tagCount={person.gifted.length + extraTags.length}
+        />
       </div>
 
-      {/* Body */}
       <div className="p-4 space-y-5">
         {/* Skills */}
         <div>
           <div className="text-xs text-gray-400 mb-2 font-medium">できること</div>
           <div className="flex gap-1.5 flex-wrap">
             {person.can.map((skill) => (
-              <span
-                key={skill}
-                className="text-xs px-3 py-1.5 rounded-[10px] bg-skill-50 border border-skill-100 text-skill-800 inline-flex items-center gap-1"
-              >
-                <span>{SKILL_ICON[skill] || "✦"}</span>
-                {skill}
-              </span>
+              <SkillBadge key={skill} skill={skill} />
             ))}
           </div>
         </div>
@@ -116,6 +86,19 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
             <div className="text-xs text-gray-200 py-1">まだタグがありません</div>
           )}
         </div>
+
+        {/* About me */}
+        {person.aboutMe && (
+          <div>
+            <div className="text-xs text-gray-400 mb-2 font-medium">自己紹介</div>
+            <div className="text-sm leading-relaxed text-gray-600">{person.aboutMe}</div>
+          </div>
+        )}
+
+        {/* Portfolio */}
+        {portfolioItems.length > 0 && (
+          <PortfolioSection items={portfolioItems} getImageUrl={(p) => p} />
+        )}
 
         {/* Milk comment */}
         {person.milkComment && (
@@ -139,12 +122,8 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
                   onClick={() => router.push(`/skill/${sp.id}`)}
                   className="p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl border border-skill-100/30 cursor-pointer active:scale-[0.98] transition-all"
                 >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Badge text="できます" bgClass="bg-skill-100" fgClass="text-skill-800" icon="✋" />
-                  </div>
-                  <div className="text-sm font-semibold text-foreground leading-snug">
-                    {sp.title}
-                  </div>
+                  <Badge text="できます" bgClass="bg-skill-100" fgClass="text-skill-800" icon="✋" />
+                  <div className="text-sm font-semibold text-foreground leading-snug mt-1">{sp.title}</div>
                   <div className="text-xs text-skill-600 mt-1">{sp.pricing}</div>
                 </div>
               ))}
@@ -175,14 +154,12 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
           </div>
         )}
 
-        {/* Favorite button */}
         <button className="w-full p-3.5 rounded-xl text-[15px] font-medium bg-primary-400 text-white border-none cursor-pointer shadow-[0_2px_8px_rgba(29,158,117,.26)]">
           ⭐ お気に入りに追加
         </button>
       </div>
 
-      {/* Gift tag modal */}
-      {showGiftModal && person && (
+      {showGiftModal && (
         <GiftTagModal
           personName={person.name}
           onClose={() => setShowGiftModal(false)}

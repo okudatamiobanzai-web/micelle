@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { Chip } from "@/components/ui/Chip";
 import { GiftedTags } from "@/components/ui/GiftedTags";
-import { SKILL_ICON } from "@/lib/constants";
+import { SkillBadge } from "@/components/ui/SkillBadge";
+import { MilkBadge } from "@/components/ui/MilkBadge";
 import { people } from "@/lib/sample-data";
 
 const FILTERS = ["すべて", "milk紹介", "デザイン", "力仕事", "不動産", "写真撮影"];
@@ -69,24 +70,14 @@ export default function PeoplePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[15px] font-semibold text-foreground">{person.name}</span>
-                  {person.milkComment && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">
-                      milk紹介
-                    </span>
-                  )}
+                  {person.milkComment && <MilkBadge />}
                 </div>
                 <div className="text-xs text-gray-400 mb-2">{person.area}</div>
 
                 {/* Skills */}
                 <div className="flex gap-1 flex-wrap mb-2">
                   {person.can.map((skill) => (
-                    <span
-                      key={skill}
-                      className="text-[11px] px-2 py-0.5 rounded-lg bg-surface border border-gray-100 text-gray-800 inline-flex items-center gap-0.5"
-                    >
-                      <span className="text-[10px]">{SKILL_ICON[skill] || "✦"}</span>
-                      {skill}
-                    </span>
+                    <SkillBadge key={skill} skill={skill} variant="compact" />
                   ))}
                 </div>
 

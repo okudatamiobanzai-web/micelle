@@ -3,7 +3,8 @@
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Orb } from "@/components/ui/Orb";
-import { SKILL_ICON } from "@/lib/constants";
+import { SkillBadge } from "@/components/ui/SkillBadge";
+import { MilkBadge } from "@/components/ui/MilkBadge";
 import { people, type SamplePost } from "@/lib/sample-data";
 
 interface SkillPostCardProps {
@@ -37,13 +38,7 @@ export function SkillPostCard({ post: p, onSelect }: SkillPostCardProps) {
           {/* Skills */}
           <div className="flex gap-1.5 flex-wrap mb-2">
             {(p.skills || []).map((s) => (
-              <span
-                key={s}
-                className="text-[11px] px-2 py-0.5 rounded-[10px] bg-background border border-gray-100 text-gray-800 inline-flex items-center gap-0.5"
-              >
-                <span className="text-[10px]">{SKILL_ICON[s] || "✦"}</span>
-                {s}
-              </span>
+              <SkillBadge key={s} skill={s} variant="compact" />
             ))}
           </div>
 
@@ -51,11 +46,7 @@ export function SkillPostCard({ post: p, onSelect }: SkillPostCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium text-foreground">{person.name}</span>
-              {person.milkComment && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">
-                  milk紹介
-                </span>
-              )}
+              {person.milkComment && <MilkBadge />}
             </div>
             <div className="text-xs text-skill-600 font-medium">{p.pricing}</div>
           </div>

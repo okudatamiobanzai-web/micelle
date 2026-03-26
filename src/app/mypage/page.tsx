@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Orb } from "@/components/ui/Orb";
+import { SkillBadge } from "@/components/ui/SkillBadge";
 import { GiftedTags } from "@/components/ui/GiftedTags";
-import { SKILL_ICON } from "@/lib/constants";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { StatsGrid } from "@/components/profile/StatsGrid";
 import { people, posts } from "@/lib/sample-data";
 
 // Demo: 田中裕子さんとしてログイン中
@@ -18,48 +19,28 @@ export default function MyPage() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 sticky top-0 bg-background z-10">
         <div className="text-lg font-bold text-foreground tracking-tight">マイページ</div>
       </div>
 
-      {/* Profile */}
       <div className="px-4 pt-4 pb-4">
-        <div className="flex items-center gap-3.5">
-          <Orb ch={me.ch} dots={me.dots} size={64} colorClass={me.colorClass} pulse />
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl font-bold text-foreground">{me.name}</span>
-              {me.milkComment && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">
-                  milk紹介
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-400">{me.area}</div>
-          </div>
-          <button className="text-xs text-gray-400 bg-surface border border-gray-100 px-3 py-1.5 rounded-lg cursor-pointer">
-            編集
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="flex gap-0 mt-4 bg-surface rounded-xl overflow-hidden">
-          {[
-            { label: "お手伝い", value: me.completedHelp },
-            { label: "依頼", value: me.completedReq },
-            { label: "紹介", value: me.referrals },
-            { label: "タグ", value: me.gifted.length },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="flex-1 text-center py-3 border-r border-gray-100 last:border-r-0"
-            >
-              <div className="text-lg font-bold text-primary-600">{s.value}</div>
-              <div className="text-[10px] text-gray-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <ProfileHeader
+          name={me.name}
+          ch={me.ch}
+          dots={me.dots}
+          colorClass={me.colorClass}
+          area={me.area}
+          isMilkEndorsed={!!me.milkComment}
+          sns={me.sns}
+          showEditButton
+          onEdit={() => {/* TODO: open edit mode */}}
+        />
+        <StatsGrid
+          completedHelp={me.completedHelp}
+          completedReq={me.completedReq}
+          referrals={me.referrals}
+          tagCount={me.gifted.length}
+        />
       </div>
 
       <div className="px-4 space-y-5">
@@ -68,13 +49,7 @@ export default function MyPage() {
           <div className="text-xs text-gray-400 mb-2 font-medium">できること</div>
           <div className="flex gap-1.5 flex-wrap">
             {me.can.map((skill) => (
-              <span
-                key={skill}
-                className="text-xs px-3 py-1.5 rounded-[10px] bg-skill-50 border border-skill-100 text-skill-800 inline-flex items-center gap-1"
-              >
-                <span>{SKILL_ICON[skill] || "✦"}</span>
-                {skill}
-              </span>
+              <SkillBadge key={skill} skill={skill} />
             ))}
           </div>
         </div>

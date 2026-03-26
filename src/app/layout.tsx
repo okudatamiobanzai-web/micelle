@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { BottomNav } from "@/components/ui/BottomNav";
-import { AuthProvider } from "@/components/AuthProvider";
+import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,12 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="min-h-full">
-        <AuthProvider>
-          <div className="max-w-[430px] mx-auto h-dvh flex flex-col bg-background relative shadow-[0_0_60px_rgba(0,0,0,.06)]">
-            <main className="flex-1 overflow-y-auto pb-16">{children}</main>
-            <BottomNav />
-          </div>
-        </AuthProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

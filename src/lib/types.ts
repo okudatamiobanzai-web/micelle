@@ -12,12 +12,27 @@ export interface Profile {
   avatar_char: string;
   area?: string;
   bio?: string;
+  about_me?: string;
   sns?: Record<string, string>;
   can: string[];
   is_milk_endorsed: boolean;
   milk_comment?: string;
   created_at: string;
   updated_at: string;
+}
+
+export type PortfolioItemType = "photo" | "video" | "link" | "work";
+
+export interface PortfolioItem {
+  id: string;
+  profile_id: string;
+  type: PortfolioItemType;
+  title?: string;
+  description?: string;
+  url?: string;
+  storage_path?: string;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface ProfileStats {

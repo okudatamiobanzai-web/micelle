@@ -3,41 +3,8 @@
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Orb } from "@/components/ui/Orb";
-import { TAG_ICON } from "@/lib/constants";
+import { TAG_ICON, TAG_ACCENT, TAG_BADGE, TAG_ICON_BG } from "@/lib/constants";
 import type { SamplePost } from "@/lib/sample-data";
-
-// Tag color CSS values (for Card accent border)
-const TAG_ACCENT: Record<string, string> = {
-  作業: "var(--color-primary-400)",
-  送迎: "var(--color-blue-400)",
-  制作: "var(--color-purple-400)",
-  子ども: "var(--color-coral-400)",
-  相談: "var(--color-amber-400)",
-  暮らし: "var(--color-primary-400)",
-  高齢者: "var(--color-primary-400)",
-};
-
-// Tag badge color classes
-const TAG_BADGE: Record<string, { bg: string; fg: string }> = {
-  作業: { bg: "bg-primary-50", fg: "text-primary-800" },
-  送迎: { bg: "bg-blue-50", fg: "text-blue-800" },
-  制作: { bg: "bg-purple-50", fg: "text-purple-800" },
-  子ども: { bg: "bg-coral-50", fg: "text-coral-800" },
-  相談: { bg: "bg-amber-50", fg: "text-amber-800" },
-  暮らし: { bg: "bg-primary-50", fg: "text-primary-800" },
-  高齢者: { bg: "bg-primary-50", fg: "text-primary-800" },
-};
-
-// Tag icon bg classes
-const TAG_ICON_BG: Record<string, string> = {
-  作業: "bg-primary-50",
-  送迎: "bg-blue-50",
-  制作: "bg-purple-50",
-  子ども: "bg-coral-50",
-  相談: "bg-amber-50",
-  暮らし: "bg-primary-50",
-  高齢者: "bg-primary-50",
-};
 
 interface HelpPostCardProps {
   post: SamplePost;
