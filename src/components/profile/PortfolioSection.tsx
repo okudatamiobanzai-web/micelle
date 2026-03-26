@@ -2,7 +2,7 @@
 
 interface PortfolioItemLike {
   id: string;
-  type: "photo" | "video" | "link" | "work";
+  type: "photo" | "video" | "link" | "work" | "document";
   title?: string;
   description?: string;
   url?: string;
@@ -21,6 +21,7 @@ export function PortfolioSection({ items, getImageUrl }: PortfolioSectionProps) 
   const videos = items.filter((i) => i.type === "video");
   const links = items.filter((i) => i.type === "link");
   const works = items.filter((i) => i.type === "work");
+  const documents = items.filter((i) => i.type === "document");
 
   return (
     <div className="space-y-5">
@@ -127,6 +128,59 @@ export function PortfolioSection({ items, getImageUrl }: PortfolioSectionProps) 
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documents (PDF etc.) */}
+      {documents.length > 0 && (
+        <div>
+          <div className="text-xs text-gray-400 mb-2 font-medium">資料・書類</div>
+          <div className="space-y-3">
+            {documents.map((d) => {
+              const src = d.storage_path ? getImageUrl(d.storage_path) : d.url || "";
+              const isPdf = src.toLowerCase().endsWith(".pdf") || d.title?.toLowerCase().includes("pdf");
+              return (
+                <div key={d.id} className="rounded-xl overflow-hidden border border-gray-100">
+                  {/* Inline PDF preview */}
+                  {isPdf && src ? (
+                    <div className="aspect-[3/4] max-h-[400px] bg-white">
+                      <iframe
+                        src={`${src}#toolbar=0&navpanes=0&scrollbar=0`}
+                        className="w-full h-full border-none"
+                        title={d.title || "PDF"}
+                      />
+                    </div>
+                  ) : src ? (
+                    <div className="aspect-[16/9] bg-surface flex items-center justify-center">
+                      <a href={src} target="_blank" rel="noopener noreferrer" className="text-4xl">
+                        📄
+                      </a>
+                    </div>
+                  ) : null}
+                  {(d.title || d.description) && (
+                    <div className="p-3 bg-surface">
+                      {d.title && (
+                        <div className="text-sm font-medium text-foreground">{d.title}</div>
+                      )}
+                      {d.description && (
+                        <div className="text-xs text-gray-400 mt-0.5">{d.description}</div>
+                      )}
+                      {src && (
+                        <a
+                          href={src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-1.5 text-xs text-primary-600 font-medium no-underline"
+                        >
+                          全画面で見る →
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

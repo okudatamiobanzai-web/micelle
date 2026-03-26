@@ -79,7 +79,7 @@ const rawPeople = [
 
 export interface SamplePortfolioItem {
   id: string;
-  type: "photo" | "video" | "link" | "work";
+  type: "photo" | "video" | "link" | "work" | "document";
   title?: string;
   description?: string;
   url?: string;

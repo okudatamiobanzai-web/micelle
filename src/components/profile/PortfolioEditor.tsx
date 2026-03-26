@@ -5,7 +5,7 @@ import type { PortfolioItemType } from "@/lib/types";
 
 interface PortfolioItemLike {
   id: string;
-  type: "photo" | "video" | "link" | "work";
+  type: "photo" | "video" | "link" | "work" | "document";
   title?: string;
   description?: string;
   url?: string;
@@ -14,6 +14,7 @@ interface PortfolioItemLike {
 
 const TYPE_OPTIONS: { id: PortfolioItemType; label: string; icon: string }[] = [
   { id: "photo", label: "写真", icon: "📷" },
+  { id: "document", label: "資料", icon: "📄" },
   { id: "video", label: "動画", icon: "🎬" },
   { id: "link", label: "リンク", icon: "🔗" },
   { id: "work", label: "制作物", icon: "🎨" },
@@ -57,7 +58,8 @@ export function PortfolioEditor({ items, onAdd, onDelete, getImageUrl }: Portfol
     (addType === "photo" && (file || url.trim())) ||
     (addType === "video" && url.trim()) ||
     (addType === "link" && url.trim()) ||
-    (addType === "work" && title.trim());
+    (addType === "work" && title.trim()) ||
+    (addType === "document" && (file || url.trim()));
 
   return (
     <div>
@@ -93,8 +95,8 @@ export function PortfolioEditor({ items, onAdd, onDelete, getImageUrl }: Portfol
             ))}
           </div>
 
-          {/* Title (for work, link, video) */}
-          {(addType === "work" || addType === "link" || addType === "video") && (
+          {/* Title (for work, link, video, document) */}
+          {(addType === "work" || addType === "link" || addType === "video" || addType === "document") && (
             <input
               type="text"
               value={title}
@@ -121,15 +123,15 @@ export function PortfolioEditor({ items, onAdd, onDelete, getImageUrl }: Portfol
             />
           )}
 
-          {/* File upload (for photo, work) */}
-          {(addType === "photo" || addType === "work") && (
+          {/* File upload (for photo, work, document) */}
+          {(addType === "photo" || addType === "work" || addType === "document") && (
             <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-gray-200 cursor-pointer mb-2 bg-background">
               <span className="text-sm text-gray-400">
                 {file ? file.name : "📎 ファイルを選択"}
               </span>
               <input
                 type="file"
-                accept="image/*"
+                accept={addType === "document" ? "application/pdf,image/*" : "image/*"}
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
               />

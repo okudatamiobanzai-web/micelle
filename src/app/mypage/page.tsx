@@ -33,7 +33,7 @@ export default function MyPage() {
           isMilkEndorsed={!!me.milkComment}
           sns={me.sns}
           showEditButton
-          onEdit={() => {/* TODO: open edit mode */}}
+          onEdit={() => router.push("/mypage/edit")}
         />
         <StatsGrid
           completedHelp={me.completedHelp}

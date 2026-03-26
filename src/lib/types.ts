@@ -21,7 +21,7 @@ export interface Profile {
   updated_at: string;
 }
 
-export type PortfolioItemType = "photo" | "video" | "link" | "work";
+export type PortfolioItemType = "photo" | "video" | "link" | "work" | "document";
 
 export interface PortfolioItem {
   id: string;
