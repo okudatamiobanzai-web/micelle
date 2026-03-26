@@ -15,7 +15,8 @@ export interface SamplePerson {
   referrals: number;
   milkComment: string | null;
   area: string;
-  sns?: Record<string, string>;
+  snsPublic?: Record<string, string>;   // 誰でも見える
+  snsPrivate?: Record<string, string>;  // マッチ後のみ
   isBusiness?: boolean;
   aboutMe?: string;
   dots: number;
@@ -70,7 +71,7 @@ function calcDots(p: { completedHelp: number; referrals: number; gifted: string[
 }
 
 const rawPeople = [
-  { id: "tanaka", name: "田中裕子", ch: "田", colorClass: "primary", can: ["デザイン", "保育", "送迎"], gifted: ["丁寧", "また頼みたい", "子ども好き", "センスがいい"], completedHelp: 8, completedReq: 2, referrals: 3, milkComment: "デザインも保育もできる頼れる存在。", area: "東2条", sns: { instagram: "tanaka_yuko" }, aboutMe: "中標津在住のフリーランスデザイナーです。元保育士の経験を活かして、子育て系のチラシやポスターのデザインが得意。milkのコワーキングで仕事してます。" },
+  { id: "tanaka", name: "田中裕子", ch: "田", colorClass: "primary", can: ["デザイン", "保育", "送迎"], gifted: ["丁寧", "また頼みたい", "子ども好き", "センスがいい"], completedHelp: 8, completedReq: 2, referrals: 3, milkComment: "デザインも保育もできる頼れる存在。", area: "東2条", snsPublic: { instagram: "tanaka_yuko" }, snsPrivate: { line: "tanaka-line-id" }, aboutMe: "中標津在住のフリーランスデザイナーです。元保育士の経験を活かして、子育て系のチラシやポスターのデザインが得意。milkのコワーキングで仕事してます。" },
   { id: "yamada", name: "山田太一", ch: "山", colorClass: "primary", can: ["力仕事", "DIY", "除雪"], gifted: ["時間に正確", "黙々と丁寧", "頼りになる"], completedHelp: 5, completedReq: 1, referrals: 1, milkComment: "真面目で体力もある。", area: "西3条" },
   { id: "nakano", name: "中野誠", ch: "中", colorClass: "primary", can: ["不動産", "空き家", "相続相談"], gifted: ["知識が深い", "話しやすい", "信頼できる"], completedHelp: 6, completedReq: 0, referrals: 2, milkComment: "空き家事情に一番詳しい人。", area: "中標津町" },
   { id: "sato", name: "佐藤美咲", ch: "佐", colorClass: "purple", can: ["写真撮影"], gifted: ["センスがいい"], completedHelp: 2, completedReq: 1, referrals: 0, milkComment: null, area: "中標津町" },

@@ -13,7 +13,8 @@ export interface Profile {
   area?: string;
   bio?: string;
   about_me?: string;
-  sns?: Record<string, string>;
+  sns_public?: Record<string, string>;   // 誰でも見える（Instagram等）
+  sns_private?: Record<string, string>;  // マッチ後のみ見える（LINE等）
   can: string[];
   is_milk_endorsed: boolean;
   milk_comment?: string;

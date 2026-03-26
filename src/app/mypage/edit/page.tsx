@@ -23,9 +23,13 @@ export default function EditProfilePage() {
   const [area, setArea] = useState(me.area);
   const [aboutMe, setAboutMe] = useState(me.aboutMe || "");
   const [skills, setSkills] = useState<string[]>(me.can);
-  const [snsInstagram, setSnsInstagram] = useState(me.sns?.instagram || "");
-  const [snsTwitter, setSnsTwitter] = useState("");
-  const [snsFacebook, setSnsFacebook] = useState("");
+  // 公開SNS（誰でも見える）
+  const [pubInstagram, setPubInstagram] = useState(me.snsPublic?.instagram || "");
+  const [pubTwitter, setPubTwitter] = useState(me.snsPublic?.twitter || "");
+  const [pubWebsite, setPubWebsite] = useState(me.snsPublic?.website || "");
+  // マッチ後SNS（マッチした相手だけ見える）
+  const [privLine, setPrivLine] = useState(me.snsPrivate?.line || "");
+  const [privFacebook, setPrivFacebook] = useState(me.snsPrivate?.facebook || "");
   const [portfolioItems, setPortfolioItems] = useState(samplePortfolios[me.id] || []);
   const [saved, setSaved] = useState(false);
 
@@ -143,41 +147,64 @@ export default function EditProfilePage() {
           </div>
         </div>
 
-        {/* SNS */}
+        {/* Public SNS */}
         <div>
-          <label className="text-xs text-gray-400 font-medium mb-2 block">SNS</label>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 text-gray-600 shrink-0">Instagram</span>
-              <input
-                type="text"
-                value={snsInstagram}
-                onChange={(e) => setSnsInstagram(e.target.value)}
-                placeholder="ユーザー名"
-                className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 text-gray-600 shrink-0">X (Twitter)</span>
-              <input
-                type="text"
-                value={snsTwitter}
-                onChange={(e) => setSnsTwitter(e.target.value)}
-                placeholder="ユーザー名"
-                className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm w-20 text-gray-600 shrink-0">Facebook</span>
-              <input
-                type="text"
-                value={snsFacebook}
-                onChange={(e) => setSnsFacebook(e.target.value)}
-                placeholder="ユーザー名"
-                className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-              />
-            </div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">
+            公開SNS <span className="text-[10px] text-gray-200">（誰でも見える）</span>
+          </label>
+          <div className="text-[11px] text-gray-200 mb-2">
+            ポートフォリオとして公開したいアカウント
           </div>
+          <div className="space-y-2">
+            {([
+              { label: "📸 Instagram", value: pubInstagram, setter: setPubInstagram },
+              { label: "𝕏 X (Twitter)", value: pubTwitter, setter: setPubTwitter },
+              { label: "🌐 Webサイト", value: pubWebsite, setter: setPubWebsite },
+            ] as const).map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="text-xs w-24 text-gray-600 shrink-0">{item.label}</span>
+                <input
+                  type="text"
+                  value={item.value}
+                  onChange={(e) => item.setter(e.target.value)}
+                  placeholder="ユーザー名 or URL"
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Private SNS */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">
+            連絡先 <span className="text-[10px] text-coral-400">🔒 マッチ後のみ公開</span>
+          </label>
+          <div className="text-[11px] text-gray-200 mb-2">
+            マッチした相手にだけ表示されます。最低1つ登録してください。
+          </div>
+          <div className="space-y-2">
+            {([
+              { label: "💬 LINE", value: privLine, setter: setPrivLine, placeholder: "LINE ID" },
+              { label: "📘 Facebook", value: privFacebook, setter: setPrivFacebook, placeholder: "ユーザー名" },
+            ] as const).map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="text-xs w-24 text-gray-600 shrink-0">{item.label}</span>
+                <input
+                  type="text"
+                  value={item.value}
+                  onChange={(e) => item.setter(e.target.value)}
+                  placeholder={item.placeholder}
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
+                />
+              </div>
+            ))}
+          </div>
+          {!privLine && !privFacebook && (
+            <div className="text-xs text-coral-400 mt-1.5">
+              連絡先を最低1つ登録してください
+            </div>
+          )}
         </div>
 
         {/* Portfolio */}
@@ -191,11 +218,11 @@ export default function EditProfilePage() {
         {/* Save */}
         <button
           onClick={handleSave}
-          disabled={!displayName.trim()}
+          disabled={!displayName.trim() || (!privLine && !privFacebook)}
           className={`w-full p-3.5 rounded-xl text-[15px] font-medium border-none cursor-pointer transition-all ${
             saved
               ? "bg-primary-50 text-primary-600"
-              : displayName.trim()
+              : displayName.trim() && (privLine || privFacebook)
                 ? "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}

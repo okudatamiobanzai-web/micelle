@@ -49,7 +49,9 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
           colorClass={person.colorClass}
           area={person.area}
           isMilkEndorsed={!!person.milkComment}
-          sns={person.sns}
+          snsPublic={person.snsPublic}
+          snsPrivate={person.snsPrivate}
+          isMatched={false}
         />
         <StatsGrid
           completedHelp={person.completedHelp}

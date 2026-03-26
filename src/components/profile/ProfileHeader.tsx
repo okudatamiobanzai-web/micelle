@@ -1,6 +1,14 @@
 import { Orb } from "@/components/ui/Orb";
 import { MilkBadge } from "@/components/ui/MilkBadge";
 
+const SNS_LABELS: Record<string, { icon: string; prefix: string }> = {
+  instagram: { icon: "📸", prefix: "@" },
+  twitter: { icon: "𝕏", prefix: "@" },
+  facebook: { icon: "📘", prefix: "" },
+  line: { icon: "💬", prefix: "LINE: " },
+  website: { icon: "🌐", prefix: "" },
+};
+
 interface ProfileHeaderProps {
   name: string;
   ch: string;
@@ -8,7 +16,9 @@ interface ProfileHeaderProps {
   colorClass: string;
   area: string;
   isMilkEndorsed: boolean;
-  sns?: Record<string, string>;
+  snsPublic?: Record<string, string>;
+  snsPrivate?: Record<string, string>;
+  isMatched?: boolean; // マッチ済みならprivate SNSも表示
   showEditButton?: boolean;
   onEdit?: () => void;
 }
@@ -20,7 +30,9 @@ export function ProfileHeader({
   colorClass,
   area,
   isMilkEndorsed,
-  sns,
+  snsPublic,
+  snsPrivate,
+  isMatched = false,
   showEditButton,
   onEdit,
 }: ProfileHeaderProps) {
@@ -33,8 +45,40 @@ export function ProfileHeader({
           {isMilkEndorsed && <MilkBadge />}
         </div>
         <div className="text-xs text-gray-400">{area}</div>
-        {sns?.instagram && (
-          <div className="text-xs text-blue-400 mt-0.5">@{sns.instagram}</div>
+
+        {/* Public SNS - always visible */}
+        {snsPublic && Object.keys(snsPublic).length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            {Object.entries(snsPublic).map(([key, value]) => {
+              const info = SNS_LABELS[key] || { icon: "🔗", prefix: "" };
+              return (
+                <span key={key} className="text-xs text-blue-400">
+                  {info.icon} {info.prefix}{value}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Private SNS - only after match */}
+        {isMatched && snsPrivate && Object.keys(snsPrivate).length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {Object.entries(snsPrivate).map(([key, value]) => {
+              const info = SNS_LABELS[key] || { icon: "🔗", prefix: "" };
+              return (
+                <span key={key} className="text-xs text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                  {info.icon} {info.prefix}{value}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Private SNS hint - when not matched */}
+        {!isMatched && snsPrivate && Object.keys(snsPrivate).length > 0 && (
+          <div className="text-[11px] text-gray-200 mt-1">
+            🔒 連絡先はマッチ後に公開されます
+          </div>
         )}
       </div>
       {showEditButton && (

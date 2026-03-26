@@ -31,7 +31,9 @@ export default function MyPage() {
           colorClass={me.colorClass}
           area={me.area}
           isMilkEndorsed={!!me.milkComment}
-          sns={me.sns}
+          snsPublic={me.snsPublic}
+          snsPrivate={me.snsPrivate}
+          isMatched={true}
           showEditButton
           onEdit={() => router.push("/mypage/edit")}
         />
