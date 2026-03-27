@@ -1,9 +1,8 @@
 import { supabase } from "./supabase";
-import { initLiff, getProfile, getAccessToken, isLoggedIn, login } from "./liff";
+import { initLiff, getAccessToken, isLoggedIn, login } from "./liff";
 
 /**
- * LIFF初期化 → LINEログイン → Supabase Auth にセッション作成
- * プロフィールがなければ自動作成
+ * LIFF初期化 → LINEログイン → サーバーサイドAPI経由でSupabase Auth セッション作成
  */
 export async function initAuth() {
   await initLiff();
@@ -12,52 +11,38 @@ export async function initAuth() {
     return null;
   }
 
-  const profile = await getProfile();
-  if (!profile) return null;
+  const accessToken = getAccessToken();
+  if (!accessToken) return null;
 
-  // Supabase に LINE ユーザーとしてサインイン
-  // LINE userId をベースにした固定の認証情報を使用
-  const email = `${profile.userId}@line.micelle.local`;
-  const password = `micelle_liff_${profile.userId}_stable_key`;
-
-  // まずサインインを試みる
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (signInData?.user) {
-    return { user: signInData.user, profile };
-  }
-
-  // サインイン失敗 → サインアップを試みる
-  if (signInError) {
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
+  try {
+    // サーバーサイド API でLINEトークン検証 + Supabase ユーザー作成/ログイン
+    const res = await fetch("/api/auth/line", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken }),
     });
 
-    // 既にユーザーが存在する場合（古いパスワードで作成済み）
-    // → service_role で管理者APIからパスワードを更新する必要があるが、
-    //   クライアント側では不可能なので、新規ユーザーのみ対応
-    if (signUpError) {
-      console.warn("Auth: signup failed, user may already exist with different password");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn("Auth API failed:", err);
       return null;
     }
 
-    if (signUpData?.user) {
-      // プロフィール自動作成
-      await supabase.from("profiles").upsert({
-        id: signUpData.user.id,
-        display_name: profile.displayName || "名無し",
-        avatar_char: profile.displayName?.charAt(0) || "？",
+    const { user, session, lineProfile } = await res.json();
+
+    // Supabase クライアントにセッションをセット
+    if (session) {
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
       });
-
-      return { user: signUpData.user, profile };
     }
-  }
 
-  return null;
+    return { user, profile: lineProfile };
+  } catch (e) {
+    console.warn("Auth init error:", e);
+    return null;
+  }
 }
 
 export async function requireLogin() {
