@@ -15,13 +15,10 @@ export async function initAuth() {
   const profile = await getProfile();
   if (!profile) return null;
 
-  const accessToken = getAccessToken();
-  if (!accessToken) return null;
-
-  // Supabase に LINE ユーザーとしてサインイン（カスタムトークン不要、IDベースで管理）
-  // 簡易実装: LINE userId をメールアドレス代わりに使用
+  // Supabase に LINE ユーザーとしてサインイン
+  // LINE userId をベースにした固定の認証情報を使用
   const email = `${profile.userId}@line.micelle.local`;
-  const password = `liff_${profile.userId}_${accessToken.slice(-8)}`;
+  const password = `micelle_liff_${profile.userId}_stable_key`;
 
   // まずサインインを試みる
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -33,15 +30,18 @@ export async function initAuth() {
     return { user: signInData.user, profile };
   }
 
-  // なければサインアップ
+  // サインイン失敗 → サインアップを試みる
   if (signInError) {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
+    // 既にユーザーが存在する場合（古いパスワードで作成済み）
+    // → service_role で管理者APIからパスワードを更新する必要があるが、
+    //   クライアント側では不可能なので、新規ユーザーのみ対応
     if (signUpError) {
-      // sign up failed
+      console.warn("Auth: signup failed, user may already exist with different password");
       return null;
     }
 
