@@ -4,17 +4,28 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Orb } from "@/components/ui/Orb";
 import { TAG_ICON, TAG_ACCENT, TAG_BADGE, TAG_ICON_BG } from "@/lib/constants";
-import type { SamplePost } from "@/lib/sample-data";
+import type { Post } from "@/lib/types";
 
 interface HelpPostCardProps {
-  post: SamplePost;
-  onSelect: (post: SamplePost) => void;
+  post: Post;
+  onSelect: (post: Post) => void;
 }
 
 export function HelpPostCard({ post: p, onSelect }: HelpPostCardProps) {
   const tag = p.tag || "作業";
   const badge = TAG_BADGE[tag] || TAG_BADGE["作業"];
-  const hasRef = (p.comments || []).filter((c) => c.refId).length > 0;
+
+  const rewardLabel = p.reward_amount
+    ? p.reward_type === "hourly"
+      ? `時給${p.reward_amount}`
+      : p.reward_type === "fixed"
+        ? p.reward_amount
+        : p.reward_type === "free"
+          ? "無償"
+          : "実費"
+    : p.reward_type === "free"
+      ? "無償"
+      : null;
 
   return (
     <Card onClick={() => onSelect(p)} accentColor={TAG_ACCENT[tag]}>
@@ -39,21 +50,23 @@ export function HelpPostCard({ post: p, onSelect }: HelpPostCardProps) {
           </div>
           <div className="flex items-center gap-1.5">
             <Orb
-              ch={p.posterCh || "?"}
-              dots={p.posterDots || 0}
+              ch={p.author?.avatar_char || "?"}
+              dots={0}
               size={22}
-              colorClass={(p.posterDots || 0) > 2 ? "primary" : "gray"}
+              colorClass="primary"
             />
-            <span className="text-xs text-gray-600">{p.poster}</span>
-            <span className="text-[11px] text-gray-400">· {p.date}</span>
+            <span className="text-xs text-gray-600">{p.author?.display_name}</span>
+            <span className="text-[11px] text-gray-400">
+              · {new Date(p.created_at).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+            </span>
           </div>
         </div>
 
         {/* Reward */}
         <div className="text-right shrink-0">
-          {p.reward ? (
+          {rewardLabel ? (
             <div className="text-[13px] font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-lg">
-              {p.reward}
+              {rewardLabel}
             </div>
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">無償</div>
@@ -64,16 +77,8 @@ export function HelpPostCard({ post: p, onSelect }: HelpPostCardProps) {
       {/* Footer */}
       <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-gray-50">
         <span className="text-xs text-gray-400">
-          💬{" "}
-          {(p.comments || []).length > 0
-            ? `${(p.comments || []).length}件のやりとり`
-            : "まだやりとりなし"}
+          {p.status === "matched" ? "✓ マッチ済み" : p.status === "resolved" ? "✓ 完了" : "💬 詳細を見る"}
         </span>
-        {hasRef && (
-          <span className="text-[11px] text-primary-600 font-medium inline-flex items-center gap-0.5 bg-primary-50 px-2 py-0.5 rounded-lg">
-            🔗 つなぎ{(p.comments || []).filter((c) => c.refId).length}件
-          </span>
-        )}
       </div>
     </Card>
   );

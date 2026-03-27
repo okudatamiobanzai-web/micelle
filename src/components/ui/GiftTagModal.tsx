@@ -63,6 +63,7 @@ export function GiftTagModal({ personName, onClose, onSend }: GiftTagModalProps)
           </div>
           <button
             onClick={onClose}
+            aria-label="閉じる"
             className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 border-none cursor-pointer text-sm"
           >
             ×

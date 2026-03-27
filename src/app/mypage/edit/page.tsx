@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { PortfolioEditor } from "@/components/profile/PortfolioEditor";
 import { SKILL_ICON } from "@/lib/constants";
-import { people, samplePortfolios } from "@/lib/sample-data";
-import type { PortfolioItemType } from "@/lib/types";
-
-// Demo: 田中裕子さんとしてログイン中
-const me = people.find((p) => p.id === "tanaka")!;
+import { useAuth } from "@/components/AuthProvider";
+import { LoginPrompt } from "@/components/ui/LoginPrompt";
+import { fetchProfile, updateProfile, fetchPortfolio, addPortfolioItem, deletePortfolioItem } from "@/lib/data";
+import type { Profile, PortfolioItem, PortfolioItemType } from "@/lib/types";
 
 const ALL_SKILLS = [
   "デザイン", "保育", "送迎", "力仕事", "DIY", "除雪",
@@ -18,20 +17,56 @@ const ALL_SKILLS = [
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState(me.name);
-  const [avatarChar, setAvatarChar] = useState(me.ch);
-  const [area, setArea] = useState(me.area);
-  const [aboutMe, setAboutMe] = useState(me.aboutMe || "");
-  const [skills, setSkills] = useState<string[]>(me.can);
-  // 公開SNS（誰でも見える）
-  const [pubInstagram, setPubInstagram] = useState(me.snsPublic?.instagram || "");
-  const [pubTwitter, setPubTwitter] = useState(me.snsPublic?.twitter || "");
-  const [pubWebsite, setPubWebsite] = useState(me.snsPublic?.website || "");
-  // マッチ後SNS（マッチした相手だけ見える）
-  const [privLine, setPrivLine] = useState(me.snsPrivate?.line || "");
-  const [privFacebook, setPrivFacebook] = useState(me.snsPrivate?.facebook || "");
-  const [portfolioItems, setPortfolioItems] = useState(samplePortfolios[me.id] || []);
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [displayName, setDisplayName] = useState("");
+  const [avatarChar, setAvatarChar] = useState("？");
+  const [area, setArea] = useState("");
+  const [aboutMe, setAboutMe] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [pubInstagram, setPubInstagram] = useState("");
+  const [pubTwitter, setPubTwitter] = useState("");
+  const [pubWebsite, setPubWebsite] = useState("");
+  const [privLine, setPrivLine] = useState("");
+  const [privFacebook, setPrivFacebook] = useState("");
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { setLoading(false); return; }
+
+    async function load() {
+      try {
+        const [p, portfolio] = await Promise.all([
+          fetchProfile(user!.id),
+          fetchPortfolio(user!.id),
+        ]);
+        if (p) {
+          setProfile(p);
+          setDisplayName(p.display_name);
+          setAvatarChar(p.avatar_char);
+          setArea(p.area || "");
+          setAboutMe(p.about_me || "");
+          setSkills(p.can || []);
+          setPubInstagram(p.sns_public?.instagram || "");
+          setPubTwitter(p.sns_public?.twitter || "");
+          setPubWebsite(p.sns_public?.website || "");
+          setPrivLine(p.sns_private?.line || "");
+          setPrivFacebook(p.sns_private?.facebook || "");
+        }
+        setPortfolioItems(portfolio);
+      } catch (e) {
+        // load failed
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [user, authLoading]);
 
   const toggleSkill = (skill: string) => {
     setSkills((prev) =>
@@ -39,25 +74,75 @@ export default function EditProfilePage() {
     );
   };
 
-  const handleAddPortfolio = (item: { type: PortfolioItemType; title?: string; description?: string; url?: string }) => {
-    setPortfolioItems((prev) => [
-      ...prev,
-      { id: `temp-${Date.now()}`, ...item, sort_order: prev.length },
-    ]);
+  const handleAddPortfolio = async (item: { type: PortfolioItemType; title?: string; description?: string; url?: string; file?: File }) => {
+    if (!user) return;
+    try {
+      const newItem = await addPortfolioItem({
+        profile_id: user.id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        url: item.url,
+        sort_order: portfolioItems.length,
+      });
+      setPortfolioItems((prev) => [...prev, newItem]);
+    } catch (e) {
+      alert("追加に失敗しました。");
+    }
   };
 
-  const handleDeletePortfolio = (id: string) => {
-    setPortfolioItems((prev) => prev.filter((i) => i.id !== id));
+  const handleDeletePortfolio = async (id: string) => {
+    try {
+      await deletePortfolioItem(id);
+      setPortfolioItems((prev) => prev.filter((i) => i.id !== id));
+    } catch (e) {
+      alert("削除に失敗しました。");
+    }
   };
 
-  const handleSave = () => {
-    // TODO: Save to Supabase
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      router.push("/mypage");
-    }, 1500);
+  const handleSave = async () => {
+    if (!user || saving) return;
+    setSaving(true);
+    try {
+      await updateProfile(user.id, {
+        display_name: displayName.trim(),
+        avatar_char: avatarChar,
+        area: area.trim() || undefined,
+        about_me: aboutMe.trim() || undefined,
+        can: skills,
+        sns_public: {
+          ...(pubInstagram && { instagram: pubInstagram }),
+          ...(pubTwitter && { twitter: pubTwitter }),
+          ...(pubWebsite && { website: pubWebsite }),
+        },
+        sns_private: {
+          ...(privLine && { line: privLine }),
+          ...(privFacebook && { facebook: privFacebook }),
+        },
+      });
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        router.push("/mypage");
+      }, 1500);
+    } catch (e) {
+      alert("保存に失敗しました。もう一度お試しください。");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading || authLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-gray-400 text-sm">読み込み中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPrompt />;
+  }
 
   return (
     <div className="pb-20">
@@ -78,7 +163,7 @@ export default function EditProfilePage() {
       <div className="p-4 space-y-6">
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
-          <Orb ch={avatarChar} dots={me.dots} size={80} colorClass={me.colorClass} />
+          <Orb ch={avatarChar} dots={0} size={80} colorClass="primary" />
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-400">表示文字</label>
             <input
@@ -218,16 +303,16 @@ export default function EditProfilePage() {
         {/* Save */}
         <button
           onClick={handleSave}
-          disabled={!displayName.trim() || (!privLine && !privFacebook)}
+          disabled={!displayName.trim() || (!privLine && !privFacebook) || saving}
           className={`w-full p-3.5 rounded-xl text-[15px] font-medium border-none cursor-pointer transition-all ${
             saved
               ? "bg-primary-50 text-primary-600"
-              : displayName.trim() && (privLine || privFacebook)
+              : displayName.trim() && (privLine || privFacebook) && !saving
                 ? "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}
         >
-          {saved ? "✓ 保存しました！" : "保存する"}
+          {saved ? "✓ 保存しました！" : saving ? "保存中..." : "保存する"}
         </button>
       </div>
     </div>

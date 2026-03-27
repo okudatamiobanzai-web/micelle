@@ -21,6 +21,7 @@ export function ConceptHero({ dismissed, onDismiss }: ConceptHeroProps) {
       {/* Dismiss button */}
       <button
         onClick={onDismiss}
+        aria-label="閉じる"
         className="absolute top-3 right-3.5 bg-white/70 border-none text-gray-400 text-sm w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
       >
         ×

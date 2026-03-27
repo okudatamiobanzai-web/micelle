@@ -1,11 +1,13 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { Badge } from "@/components/ui/Badge";
-import { posts, people } from "@/lib/sample-data";
+import { fetchPost, fetchPeople, addComment } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import { TAG_ICON, TAG_BADGE } from "@/lib/constants";
+import type { Post, Comment, Report, Profile } from "@/lib/types";
 
 const STATUS_OPTIONS = ["open", "active", "matched", "resolved", "closed"];
 const STATUS_LABEL: Record<string, string> = {
@@ -15,12 +17,33 @@ const STATUS_LABEL: Record<string, string> = {
 export default function AdminPostDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params);
   const router = useRouter();
-  const post = posts.find((p) => p.id === Number(id));
 
-  const [status, setStatus] = useState(post?.status || "open");
+  const [post, setPost] = useState<(Post & { comments: Comment[]; reports: Report[] }) | null>(null);
+  const [people, setPeople] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [status, setStatus] = useState("open");
   const [milkComment, setMilkComment] = useState("");
   const [refUser, setRefUser] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [commentPosting, setCommentPosting] = useState(false);
+
+  useEffect(() => {
+    Promise.all([fetchPost(id), fetchPeople()])
+      .then(([postData, peopleData]) => {
+        setPost(postData);
+        setPeople(peopleData);
+        if (postData) {
+          setStatus(postData.status);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-10 text-center text-gray-400">読み込み中...</div>;
+  }
 
   if (!post) {
     return <div className="p-10 text-center text-gray-400">投稿が見つかりません</div>;
@@ -29,17 +52,60 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
   const tag = post.tag || "";
   const badge = TAG_BADGE[tag] || { bg: "bg-gray-50", fg: "text-gray-600" };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const rewardLabel = post.reward_amount
+    ? post.reward_type === "hourly"
+      ? `時給${post.reward_amount}`
+      : post.reward_type === "fixed"
+        ? post.reward_amount
+        : post.reward_type === "free"
+          ? "無償"
+          : "実費"
+    : post.reward_type === "free"
+      ? "無償"
+      : null;
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      alert("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handlePostComment = () => {
-    if (!milkComment.trim()) return;
-    // TODO: Save to Supabase
-    alert(`milk運営コメント投稿: ${milkComment}${refUser ? ` (つなぎ: ${refUser})` : ""}`);
-    setMilkComment("");
-    setRefUser("");
+  const handlePostComment = async () => {
+    if (!milkComment.trim() || commentPosting) return;
+    setCommentPosting(true);
+    try {
+      // Get admin user's ID for comment author
+      const { data: { user: adminUser } } = await supabase.auth.getUser();
+      const commentAuthorId = adminUser?.id || post.author_id;
+      const comment = await addComment({
+        post_id: id,
+        author_id: commentAuthorId,
+        body: milkComment.trim(),
+        is_milk_admin: true,
+        ref_user_id: refUser || undefined,
+      });
+      setPost((prev) =>
+        prev ? { ...prev, comments: [...prev.comments, comment] } : prev
+      );
+      setMilkComment("");
+      setRefUser("");
+    } catch (e) {
+      alert("コメント投稿に失敗しました");
+    } finally {
+      setCommentPosting(false);
+    }
   };
 
   return (
@@ -69,45 +135,47 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
               </span>
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">{post.title}</h2>
-            <div className="text-sm text-gray-600 leading-relaxed mb-4">{post.body}</div>
+            {post.body && <div className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{post.body}</div>}
 
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
               <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary-800">
-                {post.posterCh || "?"}
+                {post.author?.avatar_char || "?"}
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">
-                  {post.poster || people.find((p) => p.id === post.personId)?.name}
+                  {post.author?.display_name || "—"}
                 </div>
-                <div className="text-xs text-gray-400">{post.date}</div>
+                <div className="text-xs text-gray-400">
+                  {new Date(post.created_at).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                </div>
               </div>
-              {post.reward && (
-                <div className="ml-auto text-sm font-semibold text-primary-600">{post.reward}</div>
+              {rewardLabel && (
+                <div className="ml-auto text-sm font-semibold text-primary-600">{rewardLabel}</div>
               )}
             </div>
           </div>
 
           {/* Existing comments */}
-          {(post.comments || []).length > 0 && (
+          {post.comments.length > 0 && (
             <div className="bg-white p-5 rounded-xl shadow-sm">
               <h3 className="text-sm font-medium text-foreground mb-3">やりとり</h3>
               <div className="space-y-3">
-                {(post.comments || []).map((c, i) => (
-                  <div key={i} className="flex gap-2.5 p-3 bg-gray-50 rounded-xl">
-                    <Orb ch={c.ch} dots={c.dots} size={28} colorClass={c.colorClass || "primary"} />
+                {post.comments.map((c) => (
+                  <div key={c.id} className="flex gap-2.5 p-3 bg-gray-50 rounded-xl">
+                    <Orb ch={c.author?.avatar_char || "?"} dots={0} size={28} colorClass="primary" />
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-medium text-foreground">{c.user}</span>
-                        {c.isMilk && (
+                        <span className="text-xs font-medium text-foreground">{c.author?.display_name || "—"}</span>
+                        {c.is_milk_admin && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-50 text-primary-800 font-medium">
                             milk運営
                           </span>
                         )}
                       </div>
                       <div className="text-sm text-gray-600">{c.body}</div>
-                      {c.refName && (
+                      {c.ref_user && (
                         <div className="mt-1 text-xs text-primary-600 font-medium">
-                          🔗 {c.refName}さんを紹介
+                          🔗 {c.ref_user.display_name}さんを紹介
                         </div>
                       )}
                     </div>
@@ -128,7 +196,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
               placeholder="milk運営としてのコメントを書く..."
             />
 
-            {/* Referral / つなぎ */}
+            {/* Referral */}
             <div className="mb-3">
               <label className="text-xs text-gray-400 mb-1.5 block">つなぎ（任意）</label>
               <select
@@ -139,7 +207,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
                 <option value="">紹介する人を選択...</option>
                 {people.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}（{p.can.join("・")}）
+                    {p.display_name}{p.can?.length ? `（${p.can.join("・")}）` : ""}
                   </option>
                 ))}
               </select>
@@ -147,14 +215,14 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
 
             <button
               onClick={handlePostComment}
-              disabled={!milkComment.trim()}
+              disabled={!milkComment.trim() || commentPosting}
               className={`px-6 py-2.5 rounded-xl text-sm font-medium border-none cursor-pointer ${
-                milkComment.trim()
+                milkComment.trim() && !commentPosting
                   ? "bg-primary-400 text-white"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              💬 コメント投稿
+              {commentPosting ? "投稿中..." : "💬 コメント投稿"}
             </button>
           </div>
         </div>
@@ -180,10 +248,10 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
             </div>
           </div>
 
-          {post.type === "help" && post.reward && (
+          {post.type === "help" && rewardLabel && (
             <div className="bg-white p-5 rounded-xl shadow-sm">
               <div className="text-xs text-gray-400 mb-1">報酬</div>
-              <div className="text-lg font-bold text-primary-600">{post.reward}</div>
+              <div className="text-lg font-bold text-primary-600">{rewardLabel}</div>
             </div>
           )}
 
@@ -195,7 +263,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
                 : "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
             }`}
           >
-            {saved ? "✓ 保存しました" : "変更を保存"}
+            {saved ? "✓ 保存しました" : saving ? "保存中..." : "変更を保存"}
           </button>
         </div>
       </div>

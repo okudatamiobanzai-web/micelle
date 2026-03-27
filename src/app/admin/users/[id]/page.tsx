@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { SkillBadge } from "@/components/ui/SkillBadge";
@@ -8,46 +8,116 @@ import { GiftedTags } from "@/components/ui/GiftedTags";
 import { StatsGrid } from "@/components/profile/StatsGrid";
 import { PortfolioEditor } from "@/components/profile/PortfolioEditor";
 import { PortfolioSection } from "@/components/profile/PortfolioSection";
-import { people, samplePortfolios } from "@/lib/sample-data";
-import type { PortfolioItemType } from "@/lib/types";
+import { fetchProfile, fetchPortfolio, fetchProfileStats, updateProfile, addPortfolioItem as dbAddPortfolio, deletePortfolioItem as dbDeletePortfolio } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
+import type { Profile, PortfolioItem, PortfolioItemType, ProfileStats } from "@/lib/types";
 
 export default function AdminUserDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params);
   const router = useRouter();
-  const person = people.find((p) => p.id === id);
 
-  const [milkEndorsed, setMilkEndorsed] = useState(!!person?.milkComment);
-  const [milkComment, setMilkComment] = useState(person?.milkComment || "");
-  const [aboutMe, setAboutMe] = useState(person?.aboutMe || "");
-  const [pubInstagram, setPubInstagram] = useState(person?.snsPublic?.instagram || "");
-  const [pubTwitter, setPubTwitter] = useState(person?.snsPublic?.twitter || "");
-  const [pubWebsite, setPubWebsite] = useState(person?.snsPublic?.website || "");
-  const [privLine, setPrivLine] = useState(person?.snsPrivate?.line || "");
-  const [privFacebook, setPrivFacebook] = useState(person?.snsPrivate?.facebook || "");
-  const [portfolioItems, setPortfolioItems] = useState(samplePortfolios[id] || []);
+  const [person, setPerson] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<ProfileStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [milkEndorsed, setMilkEndorsed] = useState(false);
+  const [milkComment, setMilkComment] = useState("");
+  const [aboutMe, setAboutMe] = useState("");
+  const [pubInstagram, setPubInstagram] = useState("");
+  const [pubTwitter, setPubTwitter] = useState("");
+  const [pubWebsite, setPubWebsite] = useState("");
+  const [privLine, setPrivLine] = useState("");
+  const [privFacebook, setPrivFacebook] = useState("");
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([fetchProfile(id), fetchPortfolio(id), fetchProfileStats(id)])
+      .then(([profileData, portfolioData, statsData]) => {
+        setPerson(profileData);
+        setPortfolioItems(portfolioData);
+        setStats(statsData);
+        if (profileData) {
+          setMilkEndorsed(profileData.is_milk_endorsed);
+          setMilkComment(profileData.milk_comment || "");
+          setAboutMe(profileData.about_me || "");
+          setPubInstagram(profileData.sns_public?.instagram || "");
+          setPubTwitter(profileData.sns_public?.twitter || "");
+          setPubWebsite(profileData.sns_public?.website || "");
+          setPrivLine(profileData.sns_private?.line || "");
+          setPrivFacebook(profileData.sns_private?.facebook || "");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-10 text-center text-gray-400">読み込み中...</div>;
+  }
 
   if (!person) {
     return <div className="p-10 text-center text-gray-400">ユーザーが見つかりません</div>;
   }
 
-  const handleSave = () => {
-    // TODO: Save to Supabase
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await updateProfile(id, {
+        about_me: aboutMe.trim() || undefined,
+        sns_public: {
+          ...(pubInstagram && { instagram: pubInstagram }),
+          ...(pubTwitter && { twitter: pubTwitter }),
+          ...(pubWebsite && { website: pubWebsite }),
+        },
+        sns_private: {
+          ...(privLine && { line: privLine }),
+          ...(privFacebook && { facebook: privFacebook }),
+        },
+      });
+      // Update milk endorsement and comment
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          is_milk_endorsed: milkEndorsed,
+          milk_comment: milkComment.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+      if (error) throw error;
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      alert("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleAddPortfolio = (item: { type: PortfolioItemType; title?: string; description?: string; url?: string }) => {
-    const newItem = {
-      id: `temp-${Date.now()}`,
-      ...item,
-      sort_order: portfolioItems.length,
-    };
-    setPortfolioItems((prev) => [...prev, newItem]);
+  const handleAddPortfolio = async (item: { type: PortfolioItemType; title?: string; description?: string; url?: string }) => {
+    try {
+      const newItem = await dbAddPortfolio({
+        profile_id: id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        url: item.url,
+        sort_order: portfolioItems.length,
+      });
+      setPortfolioItems((prev) => [...prev, newItem]);
+    } catch (e) {
+      alert("追加に失敗しました");
+    }
   };
 
-  const handleDeletePortfolio = (itemId: string) => {
-    setPortfolioItems((prev) => prev.filter((i) => i.id !== itemId));
+  const handleDeletePortfolio = async (itemId: string) => {
+    try {
+      await dbDeletePortfolio(itemId);
+      setPortfolioItems((prev) => prev.filter((i) => i.id !== itemId));
+    } catch (e) {
+      alert("削除に失敗しました");
+    }
   };
 
   return (
@@ -65,18 +135,20 @@ export default function AdminUserDetailPage(props: { params: Promise<{ id: strin
           {/* Header */}
           <div className="bg-white p-5 rounded-xl shadow-sm">
             <div className="flex items-center gap-4 mb-4">
-              <Orb ch={person.ch} dots={person.dots} size={56} colorClass={person.colorClass} />
+              <Orb ch={person.avatar_char} dots={0} size={56} colorClass="primary" />
               <div>
-                <div className="text-xl font-bold text-foreground">{person.name}</div>
-                <div className="text-sm text-gray-400">{person.area}</div>
+                <div className="text-xl font-bold text-foreground">{person.display_name}</div>
+                <div className="text-sm text-gray-400">{person.area || "—"}</div>
               </div>
             </div>
-            <StatsGrid
-              completedHelp={person.completedHelp}
-              completedReq={person.completedReq}
-              referrals={person.referrals}
-              tagCount={person.gifted.length}
-            />
+            {stats && (
+              <StatsGrid
+                completedHelp={stats.completed_help}
+                completedReq={stats.completed_req}
+                referrals={stats.referrals}
+                tagCount={stats.tag_count}
+              />
+            )}
           </div>
 
           {/* About me */}
@@ -193,17 +265,19 @@ export default function AdminUserDetailPage(props: { params: Promise<{ id: strin
           <div className="bg-white p-5 rounded-xl shadow-sm">
             <div className="text-sm font-medium text-foreground mb-2">できること</div>
             <div className="flex gap-1.5 flex-wrap">
-              {person.can.map((s) => (
+              {(person.can || []).map((s) => (
                 <SkillBadge key={s} skill={s} variant="compact" />
               ))}
             </div>
           </div>
 
           {/* Gifted tags */}
-          <div className="bg-white p-5 rounded-xl shadow-sm">
-            <div className="text-sm font-medium text-foreground mb-2">もらったタグ</div>
-            <GiftedTags tags={person.gifted} />
-          </div>
+          {stats && stats.gifted_tags.length > 0 && (
+            <div className="bg-white p-5 rounded-xl shadow-sm">
+              <div className="text-sm font-medium text-foreground mb-2">もらったタグ</div>
+              <GiftedTags tags={stats.gifted_tags} />
+            </div>
+          )}
 
           {/* Save button */}
           <button
@@ -214,7 +288,7 @@ export default function AdminUserDetailPage(props: { params: Promise<{ id: strin
                 : "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
             }`}
           >
-            {saved ? "✓ 保存しました" : "保存する"}
+            {saved ? "✓ 保存しました" : saving ? "保存中..." : "保存する"}
           </button>
         </div>
       </div>

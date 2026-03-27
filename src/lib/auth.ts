@@ -41,7 +41,7 @@ export async function initAuth() {
     });
 
     if (signUpError) {
-      console.error("Auth error:", signUpError);
+      // sign up failed
       return null;
     }
 

@@ -84,6 +84,7 @@ export function ProfileHeader({
       {showEditButton && (
         <button
           onClick={onEdit}
+          aria-label="プロフィールを編集"
           className="text-xs text-gray-400 bg-surface border border-gray-100 px-3 py-1.5 rounded-lg cursor-pointer"
         >
           編集

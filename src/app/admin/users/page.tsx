@@ -1,19 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { people } from "@/lib/sample-data";
+import { fetchPeople } from "@/lib/data";
+import type { Profile } from "@/lib/types";
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [people, setPeople] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPeople()
+      .then(setPeople)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="p-10 text-center text-gray-400">読み込み中...</div>;
+  }
 
   const filtered = search
     ? people.filter(
         (p) =>
-          p.name.includes(search) ||
-          p.area.includes(search) ||
-          p.can.some((c) => c.includes(search))
+          p.display_name.includes(search) ||
+          (p.area || "").includes(search) ||
+          (p.can || []).some((c) => c.includes(search))
       )
     : people;
 
@@ -44,8 +57,6 @@ export default function AdminUsersPage() {
               <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">エリア</th>
               <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">スキル</th>
               <th className="text-center text-xs text-gray-400 font-medium px-4 py-3">milk紹介</th>
-              <th className="text-center text-xs text-gray-400 font-medium px-4 py-3">お手伝い</th>
-              <th className="text-center text-xs text-gray-400 font-medium px-4 py-3">タグ</th>
             </tr>
           </thead>
           <tbody>
@@ -58,15 +69,15 @@ export default function AdminUsersPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary-800">
-                      {person.ch}
+                      {person.avatar_char}
                     </div>
-                    <span className="text-sm font-medium text-foreground">{person.name}</span>
+                    <span className="text-sm font-medium text-foreground">{person.display_name}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{person.area}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{person.area || "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1 flex-wrap">
-                    {person.can.slice(0, 3).map((s) => (
+                    {(person.can || []).slice(0, 3).map((s) => (
                       <span key={s} className="text-[11px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-600">
                         {s}
                       </span>
@@ -74,22 +85,21 @@ export default function AdminUsersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {person.milkComment ? (
+                  {person.is_milk_endorsed ? (
                     <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">承認済</span>
                   ) : (
                     <span className="text-xs text-gray-200">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-center text-sm font-semibold text-primary-600">
-                  {person.completedHelp}
-                </td>
-                <td className="px-4 py-3 text-center text-sm text-gray-600">
-                  {person.gifted.length}
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <div className="p-8 text-center text-sm text-gray-300">
+            {search ? "検索結果がありません" : "登録ユーザーがいません"}
+          </div>
+        )}
       </div>
     </div>
   );

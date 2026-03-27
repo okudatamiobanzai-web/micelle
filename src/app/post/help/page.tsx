@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TAG_ICON } from "@/lib/constants";
+import { useAuth } from "@/components/AuthProvider";
+import { LoginPrompt } from "@/components/ui/LoginPrompt";
+import { createHelpPost } from "@/lib/data";
 
 const TAGS = ["作業", "送迎", "制作", "子ども", "相談", "暮らし", "高齢者"] as const;
 
@@ -15,6 +18,7 @@ const REWARD_OPTIONS = [
 
 export default function PostHelpPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [tag, setTag] = useState<string>("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -23,14 +27,37 @@ export default function PostHelpPage() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newPostId, setNewPostId] = useState<string | null>(null);
 
-  const canSubmit = tag && title.trim().length > 0;
+  const canSubmit = tag && title.trim().length > 0 && !submitting && !!user;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    // TODO: Supabase に保存
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!canSubmit || !user) return;
+    setSubmitting(true);
+    try {
+      const postId = await createHelpPost({
+        author_id: user.id,
+        title: title.trim(),
+        body: body.trim() || undefined,
+        tag,
+        reward_type: rewardType || undefined,
+        reward_amount: rewardAmount || undefined,
+        scheduled_date: date || undefined,
+        scheduled_time: time || undefined,
+      });
+      setNewPostId(postId);
+      setSubmitted(true);
+    } catch (e) {
+      alert("投稿に失敗しました。もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!user) {
+    return <LoginPrompt message="LINEでログインしてから投稿してください" />;
+  }
 
   if (submitted) {
     return (
@@ -42,12 +69,22 @@ export default function PostHelpPage() {
           <br />
           ぴったりの人をつなぎます。
         </div>
-        <button
-          onClick={() => router.push("/")}
-          className="px-6 py-3 rounded-xl text-sm font-medium bg-primary-400 text-white border-none cursor-pointer"
-        >
-          掲示板に戻る
-        </button>
+        <div className="flex flex-col gap-3 items-center">
+          {newPostId && (
+            <button
+              onClick={() => router.push(`/help/${newPostId}`)}
+              className="px-6 py-3 rounded-xl text-sm font-medium bg-primary-400 text-white border-none cursor-pointer"
+            >
+              投稿を見る
+            </button>
+          )}
+          <button
+            onClick={() => router.push("/")}
+            className="text-sm text-gray-400 bg-transparent border-none cursor-pointer"
+          >
+            掲示板に戻る
+          </button>
+        </div>
       </div>
     );
   }
@@ -101,8 +138,12 @@ export default function PostHelpPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="例: 雪下ろしをお願いしたい"
+            maxLength={100}
             className="w-full px-3.5 py-3 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 transition-colors bg-background"
           />
+          {title.length > 80 && (
+            <div className="text-[11px] text-gray-400 text-right mt-0.5">{title.length}/100</div>
+          )}
         </div>
 
         {/* Body */}

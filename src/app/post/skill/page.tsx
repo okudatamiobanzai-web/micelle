@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SKILL_ICON } from "@/lib/constants";
+import { useAuth } from "@/components/AuthProvider";
+import { LoginPrompt } from "@/components/ui/LoginPrompt";
+import { createSkillPost } from "@/lib/data";
 
 const SKILL_OPTIONS = [
   "デザイン", "保育", "送迎", "力仕事", "DIY", "除雪",
@@ -11,11 +14,14 @@ const SKILL_OPTIONS = [
 
 export default function PostSkillPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [pricing, setPricing] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newPostId, setNewPostId] = useState<string | null>(null);
 
   const toggleSkill = (skill: string) => {
     setSkills((prev) =>
@@ -23,13 +29,31 @@ export default function PostSkillPage() {
     );
   };
 
-  const canSubmit = title.trim().length > 0 && skills.length > 0;
+  const canSubmit = title.trim().length > 0 && skills.length > 0 && !submitting && !!user;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    // TODO: Supabase に保存
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!canSubmit || !user) return;
+    setSubmitting(true);
+    try {
+      const postId = await createSkillPost({
+        author_id: user.id,
+        title: title.trim(),
+        body: body.trim() || undefined,
+        skills,
+        pricing: pricing || undefined,
+      });
+      setNewPostId(postId);
+      setSubmitted(true);
+    } catch (e) {
+      alert("投稿に失敗しました。もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!user) {
+    return <LoginPrompt message="LINEでログインしてから投稿してください" />;
+  }
 
   if (submitted) {
     return (
@@ -41,12 +65,22 @@ export default function PostSkillPage() {
           <br />
           連絡が届きます。
         </div>
-        <button
-          onClick={() => router.push("/")}
-          className="px-6 py-3 rounded-xl text-sm font-medium bg-skill-400 text-white border-none cursor-pointer"
-        >
-          掲示板に戻る
-        </button>
+        <div className="flex flex-col gap-3 items-center">
+          {newPostId && (
+            <button
+              onClick={() => router.push(`/skill/${newPostId}`)}
+              className="px-6 py-3 rounded-xl text-sm font-medium bg-skill-400 text-white border-none cursor-pointer"
+            >
+              投稿を見る
+            </button>
+          )}
+          <button
+            onClick={() => router.push("/")}
+            className="text-sm text-gray-400 bg-transparent border-none cursor-pointer"
+          >
+            掲示板に戻る
+          </button>
+        </div>
       </div>
     );
   }
@@ -78,8 +112,12 @@ export default function PostSkillPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="例: チラシ・ポスターのデザインできます"
+            maxLength={100}
             className="w-full px-3.5 py-3 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-skill-200 transition-colors bg-background"
           />
+          {title.length > 80 && (
+            <div className="text-[11px] text-gray-400 text-right mt-0.5">{title.length}/100</div>
+          )}
         </div>
 
         {/* Skills */}

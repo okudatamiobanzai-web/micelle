@@ -210,6 +210,7 @@ export function PortfolioEditor({ items, onAdd, onDelete, getImageUrl }: Portfol
               {/* Delete */}
               <button
                 onClick={() => onDelete(item.id)}
+                aria-label="削除"
                 className="text-xs text-gray-400 bg-transparent border-none cursor-pointer p-1"
               >
                 ✕
