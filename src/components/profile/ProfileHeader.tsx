@@ -16,6 +16,7 @@ interface ProfileHeaderProps {
   colorClass: string;
   area: string;
   isMilkEndorsed: boolean;
+  pictureUrl?: string;
   snsPublic?: Record<string, string>;
   snsPrivate?: Record<string, string>;
   isMatched?: boolean; // マッチ済みならprivate SNSも表示
@@ -30,6 +31,7 @@ export function ProfileHeader({
   colorClass,
   area,
   isMilkEndorsed,
+  pictureUrl,
   snsPublic,
   snsPrivate,
   isMatched = false,
@@ -38,7 +40,7 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   return (
     <div className="flex items-center gap-3.5">
-      <Orb ch={ch} dots={dots} size={64} colorClass={colorClass} pulse />
+      <Orb ch={ch} dots={dots} size={64} colorClass={colorClass} pulse imageUrl={pictureUrl} />
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xl font-bold text-foreground">{name}</span>

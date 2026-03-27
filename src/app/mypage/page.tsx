@@ -77,6 +77,7 @@ export default function MyPage() {
           colorClass="primary"
           area={profile.area || ""}
           isMilkEndorsed={profile.is_milk_endorsed}
+          pictureUrl={profile.picture_url}
           snsPublic={profile.sns_public}
           snsPrivate={profile.sns_private}
           isMatched={true}

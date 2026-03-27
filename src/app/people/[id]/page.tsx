@@ -93,6 +93,7 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
           colorClass="primary"
           area={profile.area || ""}
           isMilkEndorsed={profile.is_milk_endorsed}
+          pictureUrl={profile.picture_url}
           snsPublic={profile.sns_public}
           snsPrivate={profile.sns_private}
           isMatched={false}

@@ -10,6 +10,7 @@ export interface Profile {
   id: string;
   display_name: string;
   avatar_char: string;
+  picture_url?: string;
   area?: string;
   bio?: string;
   about_me?: string;

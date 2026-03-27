@@ -79,7 +79,7 @@ export default function PeoplePage() {
             className="mx-4 my-2 p-4 bg-background rounded-[14px] shadow-[0_1px_3px_rgba(0,0,0,.04),0_1px_2px_rgba(0,0,0,.03)] cursor-pointer active:scale-[0.98] transition-all duration-200"
           >
             <div className="flex items-start gap-3">
-              <Orb ch={person.avatar_char} dots={0} size={48} colorClass="primary" />
+              <Orb ch={person.avatar_char} dots={0} size={48} colorClass="primary" imageUrl={person.picture_url} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[15px] font-semibold text-foreground">{person.display_name}</span>

@@ -54,6 +54,7 @@ export function HelpPostCard({ post: p, onSelect }: HelpPostCardProps) {
               dots={0}
               size={22}
               colorClass="primary"
+              imageUrl={p.author?.picture_url}
             />
             <span className="text-xs text-gray-600">{p.author?.display_name}</span>
             <span className="text-[11px] text-gray-400">

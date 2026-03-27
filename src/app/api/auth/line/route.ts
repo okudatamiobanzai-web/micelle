@@ -37,10 +37,15 @@ export async function POST(request: NextRequest) {
     let user;
 
     if (existingUser) {
-      // 3a. 既存ユーザー → パスワードを更新してサインイン
+      // 3a. 既存ユーザー → パスワード更新 + プロフィール写真更新
       await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
         password,
       });
+      // LINE プロフィール写真を毎回更新
+      await supabaseAdmin.from("profiles").update({
+        picture_url: pictureUrl || null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", existingUser.id);
 
       const { data: signInData, error: signInError } =
         await supabaseAdmin.auth.signInWithPassword({ email, password });
@@ -76,6 +81,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         display_name: displayName || "名無し",
         avatar_char: displayName?.charAt(0) || "？",
+        picture_url: pictureUrl || null,
       });
 
       // サインインしてセッションを取得

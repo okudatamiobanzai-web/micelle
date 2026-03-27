@@ -98,7 +98,7 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
       </div>
 
       <div className="px-4 py-3 flex items-center gap-2.5 border-b border-gray-50">
-        <Orb ch={post.author?.avatar_char || "?"} dots={0} size={36} colorClass="primary" />
+        <Orb ch={post.author?.avatar_char || "?"} dots={0} size={36} colorClass="primary" imageUrl={post.author?.picture_url} />
         <div className="flex-1">
           <div className="text-sm font-medium text-foreground">{post.author?.display_name}</div>
           <div className="text-[11px] text-gray-400">{new Date(post.created_at).toLocaleDateString("ja-JP")}</div>
@@ -128,7 +128,7 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
           <div className="space-y-3">
             {comments.map((c) => (
               <div key={c.id} className="flex gap-2.5">
-                <Orb ch={c.author?.avatar_char || "?"} dots={0} size={32} colorClass="primary" />
+                <Orb ch={c.author?.avatar_char || "?"} dots={0} size={32} colorClass="primary" imageUrl={c.author?.picture_url} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-medium text-foreground">{c.author?.display_name}</span>

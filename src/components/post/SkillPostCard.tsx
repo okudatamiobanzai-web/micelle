@@ -23,7 +23,7 @@ export function SkillPostCard({ post: p, onSelect }: SkillPostCardProps) {
       className="bg-gradient-to-br from-skill-50 to-background"
     >
       <div className="flex items-start gap-3">
-        <Orb ch={author.avatar_char} dots={0} size={44} colorClass="primary" />
+        <Orb ch={author.avatar_char} dots={0} size={44} colorClass="primary" imageUrl={author.picture_url} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
             <Badge text="できます" bgClass="bg-skill-100" fgClass="text-skill-800" icon="✋" />

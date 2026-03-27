@@ -33,12 +33,13 @@ export function ReportCard({ post: p, onSelect }: ReportCardProps) {
             dots={0}
             size={20}
             colorClass="primary"
+            imageUrl={p.author?.picture_url}
           />
           <span className="text-[11px] text-gray-400">{p.author?.display_name}</span>
           {p.helper && (
             <>
               <span className="text-gray-200 text-[10px] mx-0.5">×</span>
-              <Orb ch={p.helper.avatar_char} dots={0} size={20} colorClass="primary" />
+              <Orb ch={p.helper.avatar_char} dots={0} size={20} colorClass="primary" imageUrl={p.helper.picture_url} />
               <span className="text-[11px] text-gray-400">{p.helper.display_name}</span>
             </>
           )}

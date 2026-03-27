@@ -72,7 +72,7 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
         <div className="text-xl font-semibold text-foreground mb-3 leading-snug">{post.title}</div>
 
         <div className="flex items-center gap-2.5 p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl">
-          <Orb ch={person.avatar_char} dots={0} size={48} colorClass="primary" />
+          <Orb ch={person.avatar_char} dots={0} size={48} colorClass="primary" imageUrl={person.picture_url} />
           <div className="flex-1">
             <div className="text-[15px] font-semibold text-foreground">{person.display_name}</div>
             <div className="text-xs text-gray-400 mt-0.5">{person.area}</div>

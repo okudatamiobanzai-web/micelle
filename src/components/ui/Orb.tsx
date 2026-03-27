@@ -4,14 +4,15 @@ interface OrbProps {
   ch: string;
   dots?: number;
   size?: number;
-  colorClass?: string; // e.g. "primary", "purple", "blue"
+  colorClass?: string;
   pulse?: boolean;
   onClick?: () => void;
+  imageUrl?: string; // LINE profile picture URL
 }
 
 /**
  * Orb: ドット付きアバター
- * dots: 活動ドット数(0-8), size: px, colorClass: Tailwind color prefix
+ * imageUrl があれば写真表示、なければ文字表示
  */
 export function Orb({
   ch,
@@ -20,12 +21,12 @@ export function Orb({
   colorClass = "primary",
   pulse = false,
   onClick,
+  imageUrl,
 }: OrbProps) {
   const r = size * 0.52;
   const innerSize = size * 0.68;
   const dotSize = size * 0.1;
 
-  // Generate dot positions
   const dotPositions = Array.from({ length: dots }, (_, i) => {
     const angle = (i / Math.max(dots, 1)) * Math.PI * 2 - Math.PI / 2;
     return {
@@ -55,7 +56,11 @@ export function Orb({
 
       {/* Center circle */}
       <div
-        className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center font-semibold z-2 bg-gradient-to-br from-${colorClass}-50 to-white border-[1.5px] border-${colorClass}-200 text-${colorClass}-800 shadow-sm`}
+        className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center font-semibold z-2 overflow-hidden shadow-sm ${
+          imageUrl
+            ? "border-[1.5px] border-gray-100"
+            : `bg-gradient-to-br from-${colorClass}-50 to-white border-[1.5px] border-${colorClass}-200 text-${colorClass}-800`
+        }`}
         style={{
           width: innerSize,
           height: innerSize,
@@ -64,7 +69,16 @@ export function Orb({
           zIndex: 2,
         }}
       >
-        {ch}
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={ch}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          ch
+        )}
       </div>
 
       {/* Activity dots */}
