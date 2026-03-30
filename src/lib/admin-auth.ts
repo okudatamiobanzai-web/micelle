@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 
 export async function adminSignIn(email: string, password: string) {
+  // 1. パスワード認証
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -9,19 +10,30 @@ export async function adminSignIn(email: string, password: string) {
   if (error) return { error: error.message };
   if (!data.user) return { error: "ログインに失敗しました" };
 
-  // Check if user is in admin_users table
-  const { data: adminData } = await supabase
-    .from("admin_users")
-    .select("*")
-    .eq("user_id", data.user.id)
-    .single();
+  // 2. 管理者チェック（サービスロールキー使用のAPIルート経由）
+  try {
+    const response = await fetch("/api/admin/auth-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: data.user.id }),
+    });
 
-  if (!adminData) {
+    if (!response.ok) {
+      await supabase.auth.signOut();
+      return { error: "管理者権限がありません" };
+    }
+
+    const result = await response.json();
+    if (!result.admin) {
+      await supabase.auth.signOut();
+      return { error: "管理者権限がありません" };
+    }
+
+    return { user: data.user, admin: result.admin };
+  } catch {
     await supabase.auth.signOut();
-    return { error: "管理者権限がありません" };
+    return { error: "管理者チェックに失敗しました" };
   }
-
-  return { user: data.user, admin: adminData };
 }
 
 export async function adminSignOut() {
@@ -32,12 +44,20 @@ export async function getAdminSession() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
 
-  const { data: adminData } = await supabase
-    .from("admin_users")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .single();
+  try {
+    const response = await fetch("/api/admin/auth-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: session.user.id }),
+    });
 
-  if (!adminData) return null;
-  return { user: session.user, admin: adminData };
+    if (!response.ok) return null;
+
+    const result = await response.json();
+    if (!result.admin) return null;
+
+    return { user: session.user, admin: result.admin };
+  } catch {
+    return null;
+  }
 }
