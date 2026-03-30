@@ -163,17 +163,10 @@ export default function EditProfilePage() {
       <div className="p-4 space-y-6">
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
-          <Orb ch={avatarChar} dots={0} size={80} colorClass="primary" />
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-400">表示文字</label>
-            <input
-              type="text"
-              value={avatarChar}
-              onChange={(e) => setAvatarChar(e.target.value.slice(0, 1))}
-              maxLength={1}
-              className="w-12 text-center px-2 py-1.5 rounded-lg border border-gray-100 text-sm text-foreground focus:outline-none focus:border-primary-200 bg-background"
-            />
-          </div>
+          <Orb ch={avatarChar} dots={0} size={80} colorClass="primary" imageUrl={profile?.picture_url} />
+          {profile?.picture_url && (
+            <div className="text-[11px] text-gray-400">LINEのプロフィール写真を使用中</div>
+          )}
         </div>
 
         {/* Basic info */}

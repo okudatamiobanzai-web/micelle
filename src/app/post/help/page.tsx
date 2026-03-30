@@ -18,7 +18,7 @@ const REWARD_OPTIONS = [
 
 export default function PostHelpPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [tag, setTag] = useState<string>("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -54,6 +54,14 @@ export default function PostHelpPage() {
       setSubmitting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-gray-400 text-sm">読み込み中...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <LoginPrompt message="LINEでログインしてから投稿してください" />;
