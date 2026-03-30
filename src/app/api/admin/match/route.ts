@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendSlackNotification, buildMatchNotification } from "@/lib/slack";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -111,6 +112,13 @@ export async function POST(request: NextRequest) {
     await Promise.all([
       lineId1 ? sendLineNotification(lineId1, msg1) : Promise.resolve(),
       lineId2 ? sendLineNotification(lineId2, msg2) : Promise.resolve(),
+      // Slack通知（管理者向け）
+      sendSlackNotification(buildMatchNotification({
+        user1Name,
+        user2Name,
+        postTitle,
+        postUrl: `https://micelle.shirubelab.jp/admin/posts/${postId}`,
+      })),
     ]);
 
     return NextResponse.json({ success: true, match: matchData });

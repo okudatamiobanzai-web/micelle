@@ -166,6 +166,19 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
                         link: `/skill/${post.id}`,
                       });
                     }
+
+                    // Slack通知（milk運営向け）
+                    fetch("/api/notify/interest", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        interestedUser: person?.display_name || "ユーザー",
+                        postTitle: post.title,
+                        postAuthor: person?.display_name || "",
+                        postId: post.id,
+                        postType: "skill",
+                      }),
+                    }).catch(() => {});
                   } catch {
                     alert("送信に失敗しました。もう一度お試しください。");
                   } finally {

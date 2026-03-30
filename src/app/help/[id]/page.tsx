@@ -58,6 +58,19 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
           body: newComment.trim().slice(0, 100),
           link: `/help/${post.id}`,
         });
+
+        // Slack通知（milk運営向け）
+        fetch("/api/notify/interest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            interestedUser: post.author?.display_name || "ユーザー",
+            postTitle: post.title,
+            postAuthor: post.author?.display_name || "",
+            postId: post.id,
+            postType: "help",
+          }),
+        }).catch(() => {});
       }
     } catch {
       alert("コメントの送信に失敗しました。もう一度お試しください。");
