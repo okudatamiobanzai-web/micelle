@@ -97,7 +97,10 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
         <div className="text-xl font-semibold text-foreground leading-snug">{post.title}</div>
       </div>
 
-      <div className="px-4 py-3 flex items-center gap-2.5 border-b border-gray-50">
+      <div
+        className="px-4 py-3 flex items-center gap-2.5 border-b border-gray-50 cursor-pointer active:bg-gray-50 transition-colors"
+        onClick={() => post.author_id && router.push(`/people/${post.author_id}`)}
+      >
         <Orb ch={post.author?.avatar_char || "?"} dots={0} size={36} colorClass="primary" imageUrl={post.author?.picture_url} />
         <div className="flex-1">
           <div className="text-sm font-medium text-foreground">{post.author?.display_name}</div>

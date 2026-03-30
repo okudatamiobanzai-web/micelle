@@ -71,7 +71,10 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
         </div>
         <div className="text-xl font-semibold text-foreground mb-3 leading-snug">{post.title}</div>
 
-        <div className="flex items-center gap-2.5 p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl">
+        <div
+          className="flex items-center gap-2.5 p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+          onClick={() => router.push(`/people/${person.id}`)}
+        >
           <Orb ch={person.avatar_char} dots={0} size={48} colorClass="primary" imageUrl={person.picture_url} />
           <div className="flex-1">
             <div className="text-[15px] font-semibold text-foreground">{person.display_name}</div>
@@ -83,6 +86,7 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
               </div>
             )}
           </div>
+          <span className="text-gray-200 text-sm">›</span>
         </div>
       </div>
 
