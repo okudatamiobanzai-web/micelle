@@ -105,3 +105,12 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
+
+export interface Match {
+  id: string;
+  post_id: string;
+  user1_id: string;
+  user2_id: string;
+  status: 'matched' | 'completed';
+  created_at: string;
+}

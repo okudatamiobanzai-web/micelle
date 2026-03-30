@@ -10,7 +10,7 @@ import { GiftTagModal } from "@/components/ui/GiftTagModal";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { StatsGrid } from "@/components/profile/StatsGrid";
 import { PortfolioSection } from "@/components/profile/PortfolioSection";
-import { fetchProfile, fetchPosts, fetchPortfolio, fetchProfileStats, addGiftedTag } from "@/lib/data";
+import { fetchProfile, fetchPosts, fetchPortfolio, fetchProfileStats, addGiftedTag, checkMatch } from "@/lib/data";
 import { useAuth } from "@/components/AuthProvider";
 import type { Profile, Post, PortfolioItem } from "@/lib/types";
 
@@ -21,6 +21,7 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [extraTags, setExtraTags] = useState<string[]>([]);
 
+  const [isMatched, setIsMatched] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [skillPosts, setSkillPosts] = useState<Post[]>([]);
   const [helpedPosts, setHelpedPosts] = useState<Post[]>([]);
@@ -50,6 +51,12 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
             referrals: profileStats.referrals,
             tagCount: profileStats.tag_count,
           });
+
+          // Check if current user is matched with this profile
+          if (user && p) {
+            const matched = await checkMatch(user.id, id);
+            setIsMatched(matched);
+          }
         }
       } catch (e) {
         // fetch failed
@@ -58,7 +65,7 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
       }
     }
     load();
-  }, [id]);
+  }, [id, user]);
 
   if (loading) {
     return (
@@ -96,7 +103,7 @@ export default function PersonDetailPage(props: { params: Promise<{ id: string }
           pictureUrl={profile.picture_url}
           snsPublic={profile.sns_public}
           snsPrivate={profile.sns_private}
-          isMatched={false}
+          isMatched={user?.id === id || isMatched}
         />
         <StatsGrid
           completedHelp={stats.completedHelp}

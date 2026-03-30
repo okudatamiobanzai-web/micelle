@@ -298,6 +298,19 @@ export async function addGiftedTag(params: {
 }
 
 // ==========================================
+// マッチング
+// ==========================================
+
+export async function checkMatch(userId1: string, userId2: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("matches")
+    .select("id")
+    .or(`and(user1_id.eq.${userId1},user2_id.eq.${userId2}),and(user1_id.eq.${userId2},user2_id.eq.${userId1})`)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+// ==========================================
 // 通知作成
 // ==========================================
 

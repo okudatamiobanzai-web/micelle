@@ -28,6 +28,9 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [commentPosting, setCommentPosting] = useState(false);
+  const [matchUser, setMatchUser] = useState("");
+  const [matching, setMatching] = useState(false);
+  const [matchDone, setMatchDone] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchPost(id), fetchPeople()])
@@ -79,6 +82,31 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
       alert("保存に失敗しました");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleMatch = async () => {
+    if (!matchUser || matching || !post) return;
+    if (!confirm(`${people.find(p => p.id === matchUser)?.display_name}さんとマッチさせますか？`)) return;
+    setMatching(true);
+    try {
+      const res = await fetch("/api/admin/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          user1Id: post.author_id,
+          user2Id: matchUser,
+        }),
+      });
+      if (!res.ok) throw new Error("Match failed");
+      setMatchDone(true);
+      setStatus("matched");
+      alert("マッチしました！双方にLINE通知を送りました。");
+    } catch (e) {
+      alert("マッチングに失敗しました");
+    } finally {
+      setMatching(false);
     }
   };
 
@@ -247,6 +275,39 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
               ))}
             </div>
           </div>
+
+          {/* Match section */}
+          {post.status !== "matched" && post.status !== "resolved" && (
+            <div className="bg-white p-5 rounded-xl shadow-sm border-2 border-primary-100">
+              <h3 className="text-sm font-bold text-foreground mb-1">🤝 マッチさせる</h3>
+              <p className="text-xs text-gray-400 mb-3">選んだ人とマッチさせ、双方にLINE通知を送ります</p>
+              <select
+                value={matchUser}
+                onChange={(e) => setMatchUser(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-foreground bg-white mb-3"
+              >
+                <option value="">マッチさせる人を選択...</option>
+                {people.filter(p => p.id !== post.author_id).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.display_name}{p.can?.length ? `（${p.can.slice(0,2).join("・")}）` : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleMatch}
+                disabled={!matchUser || matching || matchDone}
+                className={`w-full py-2.5 rounded-xl text-sm font-medium border-none cursor-pointer transition-all ${
+                  matchDone
+                    ? "bg-primary-50 text-primary-600"
+                    : matchUser && !matching
+                      ? "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {matchDone ? "✓ マッチ済" : matching ? "マッチ中..." : "🤝 マッチさせる"}
+              </button>
+            </div>
+          )}
 
           {post.type === "help" && rewardLabel && (
             <div className="bg-white p-5 rounded-xl shadow-sm">
