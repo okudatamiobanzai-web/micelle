@@ -7,7 +7,7 @@ function detectType(url: string): "youtube" | "twitter" | "instagram" | "unknown
   return "unknown";
 }
 
-async function fetchOEmbed(endpoint: string): Promise<{ html?: string; title?: string; author_name?: string } | null> {
+async function fetchOEmbed(endpoint: string): Promise<{ html?: string; title?: string; author_name?: string; thumbnail_url?: string } | null> {
   try {
     const res = await fetch(endpoint, { next: { revalidate: 3600 } });
     if (!res.ok) return null;
@@ -15,6 +15,17 @@ async function fetchOEmbed(endpoint: string): Promise<{ html?: string; title?: s
   } catch {
     return null;
   }
+}
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&apos;/g, "'");
 }
 
 async function fetchOGP(url: string): Promise<{ title?: string; image?: string; description?: string } | null> {
@@ -26,9 +37,10 @@ async function fetchOGP(url: string): Promise<{ title?: string; image?: string; 
     if (!res.ok) return null;
     const html = await res.text();
     const get = (property: string) => {
-      const m = html.match(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, "i"))
-        || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, "i"));
-      return m?.[1] ?? undefined;
+      const m =
+        html.match(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, "i")) ||
+        html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, "i"));
+      return m?.[1] ? decodeHtmlEntities(m[1]) : undefined;
     };
     return {
       title: get("og:title"),
@@ -51,23 +63,29 @@ export async function GET(request: NextRequest) {
       `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
     );
     if (!data?.html) return NextResponse.json({ error: "failed" }, { status: 502 });
-    // Modify iframe for autoplay muted
-    const html = data.html.replace(
-      /src="([^"]+)"/,
-      (_, src) => {
+    // Modify iframe for autoplay muted, ensure 100% width
+    const html = data.html
+      .replace(/src="([^"]+)"/, (_, src) => {
         const u = new URL(src);
         u.searchParams.set("autoplay", "1");
         u.searchParams.set("mute", "1");
         u.searchParams.set("controls", "1");
         return `src="${u.toString()}"`;
-      }
-    );
-    return NextResponse.json({ type: "youtube", html });
+      })
+      .replace(/width="\d+"/, 'width="100%"')
+      .replace(/height="\d+"/, 'height="100%"');
+    return NextResponse.json({
+      type: "youtube",
+      html,
+      title: data.title,
+      author_name: data.author_name,
+      thumbnail_url: data.thumbnail_url,
+    });
   }
 
   if (type === "twitter") {
     const data = await fetchOEmbed(
-      `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&dnt=true&theme=light`
+      `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&dnt=true&theme=light&omit_script=true`
     );
     if (!data?.html) return NextResponse.json({ error: "failed" }, { status: 502 });
     return NextResponse.json({ type: "twitter", html: data.html });
