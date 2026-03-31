@@ -161,7 +161,7 @@ export default function SkillDetailClient({ id }: { id: string }) {
           🙋 {post.interested_count ?? 0}人がこのスキルに興味を持っています
         </div>
 
-        {!user ? (
+        {user?.id === post.author_id ? null : !user ? (
           <div className="text-center p-3.5 rounded-xl bg-gray-50">
             <div className="text-sm text-gray-400">ログインすると相談できます</div>
           </div>

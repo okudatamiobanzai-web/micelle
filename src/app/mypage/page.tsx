@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SkillBadge } from "@/components/ui/SkillBadge";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { useAuth } from "@/components/AuthProvider";
-import { fetchProfile, fetchPosts } from "@/lib/data";
+import { fetchProfile, fetchPosts, closePost, resolvePost } from "@/lib/data";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { logout } from "@/lib/liff";
 import type { Profile, Post } from "@/lib/types";
@@ -15,6 +15,7 @@ export default function MyPage() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [mySkillPosts, setMySkillPosts] = useState<Post[]>([]);
+  const [myHelpPosts, setMyHelpPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,12 +24,14 @@ export default function MyPage() {
 
     async function load() {
       try {
-        const [p, skillPosts] = await Promise.all([
+        const [p, skillPosts, helpPosts] = await Promise.all([
           fetchProfile(user!.id),
           fetchPosts({ type: "skill" }),
+          fetchPosts({ type: "help" }),
         ]);
         setProfile(p);
         setMySkillPosts(skillPosts.filter((sp) => sp.author_id === user!.id));
+        setMyHelpPosts(helpPosts.filter((hp) => hp.author_id === user!.id && hp.status !== "closed" && hp.status !== "resolved"));
       } catch (e) {
         // load failed
       } finally {
@@ -100,22 +103,81 @@ export default function MyPage() {
                 key={sp.id}
                 className="p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl border border-skill-100/30 mb-2"
               >
-                <div
-                  className="cursor-pointer active:scale-[0.98] transition-all"
-                  onClick={() => router.push(`/skill/${sp.id}`)}
-                >
-                  <div className="text-sm font-semibold text-foreground">{sp.title}</div>
-                  <div className="text-xs text-skill-600 mt-1">{sp.pricing}</div>
-                  <div className="text-[11px] text-gray-400 mt-1">🙋 {sp.interested_count ?? 0}人が興味</div>
-                </div>
-                <div className="flex justify-end mt-2">
-                  <button
-                    onClick={() => router.push(`/skill/${sp.id}/edit`)}
-                    className="text-[11px] text-gray-400 bg-white border border-gray-100 px-3 py-1 rounded-lg cursor-pointer"
+                <div className="flex items-start justify-between gap-2">
+                  <div
+                    className="flex-1 cursor-pointer active:scale-[0.98] transition-all"
+                    onClick={() => router.push(`/skill/${sp.id}`)}
                   >
-                    編集
+                    <div className="text-sm font-semibold text-foreground">{sp.title}</div>
+                    <div className="text-xs text-skill-600 mt-1">{sp.pricing}</div>
+                    <div className="text-[11px] text-gray-400 mt-1">🙋 {sp.interested_count ?? 0}人が興味</div>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      onClick={() => router.push(`/skill/${sp.id}/edit`)}
+                      className="text-[11px] text-gray-400 bg-white border border-gray-100 px-3 py-1.5 rounded-lg cursor-pointer"
+                    >
+                      編集
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("この投稿を取り下げますか？")) return;
+                        await closePost(sp.id);
+                        setMySkillPosts((prev) => prev.filter((p) => p.id !== sp.id));
+                      }}
+                      className="text-[11px] text-gray-400 bg-white border border-gray-100 px-3 py-1.5 rounded-lg cursor-pointer"
+                    >
+                      取り下げ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* My help posts */}
+        {myHelpPosts.length > 0 && (
+          <div>
+            <div className="text-xs text-gray-400 mb-2 font-medium">自分の「困りごと」</div>
+            {myHelpPosts.map((hp) => (
+              <div
+                key={hp.id}
+                className="p-3 bg-white rounded-xl border border-gray-100 mb-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div
+                    className="flex-1 cursor-pointer active:scale-[0.98] transition-all"
+                    onClick={() => router.push(`/help/${hp.id}`)}
+                  >
+                    <div className="text-sm font-semibold text-foreground">{hp.title}</div>
+                    <div className="text-[11px] text-gray-400 mt-1">
+                      {hp.status === "matched" ? "✓ 対応中" : "受付中"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm("この投稿を取り下げますか？")) return;
+                      await closePost(hp.id);
+                      setMyHelpPosts((prev) => prev.filter((p) => p.id !== hp.id));
+                    }}
+                    className="text-[11px] text-gray-400 bg-white border border-gray-100 px-3 py-1.5 rounded-lg cursor-pointer shrink-0"
+                  >
+                    取り下げ
                   </button>
                 </div>
+                {hp.status === "matched" && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm("解決済みにしますか？")) return;
+                      await resolvePost(hp.id);
+                      setMyHelpPosts((prev) => prev.filter((p) => p.id !== hp.id));
+                    }}
+                    className="mt-2 w-full text-[11px] text-primary-600 bg-primary-50 border border-primary-100 py-1.5 rounded-lg cursor-pointer"
+                  >
+                    ✅ 解決済みにする
+                  </button>
+                )}
               </div>
             ))}
           </div>

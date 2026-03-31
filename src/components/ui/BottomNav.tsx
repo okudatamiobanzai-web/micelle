@@ -6,7 +6,6 @@ import { NavIcon } from "./NavIcon";
 const NAV_ITEMS: { id: string; icon: "board" | "post" | "people" | "mypage"; label: string; href: string }[] = [
   { id: "board", icon: "board", label: "掲示板", href: "/" },
   { id: "post", icon: "post", label: "書く", href: "/post" },
-  { id: "people", icon: "people", label: "見せる", href: "/people" },
   { id: "mypage", icon: "mypage", label: "マイページ", href: "/mypage" },
 ];
 

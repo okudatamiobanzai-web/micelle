@@ -107,7 +107,7 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      {(post.status === "open" || post.status === "active") && (
+      {(post.status === "open" || post.status === "active") && user?.id !== post.author_id && (
         <div className="px-4 pb-6">
           {!user ? (
             <div className="text-center text-sm text-gray-400 py-3">

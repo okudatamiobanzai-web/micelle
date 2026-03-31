@@ -74,6 +74,22 @@ export async function createSkillPost(params: {
   return data.id;
 }
 
+export async function closePost(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("posts")
+    .update({ status: "closed", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function resolvePost(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("posts")
+    .update({ status: "resolved", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function updateSkillPost(id: string, params: {
   title: string;
   body?: string;
