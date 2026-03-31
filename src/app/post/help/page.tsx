@@ -7,14 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { createHelpPost } from "@/lib/data";
 
-const TAGS = ["作業", "送迎", "制作", "子ども", "相談", "暮らし", "高齢者"] as const;
-
-const REWARD_OPTIONS = [
-  { id: "fixed", label: "固定金額", placeholder: "例: 5,000円" },
-  { id: "hourly", label: "時給", placeholder: "例: 時給1,500円" },
-  { id: "actual_cost", label: "実費のみ", placeholder: "" },
-  { id: "free", label: "無償", placeholder: "" },
-];
+const TAGS = ["送迎", "相談", "子ども", "暮らし", "DIY", "除雪", "IT", "その他"] as const;
 
 export default function PostHelpPage() {
   const router = useRouter();
@@ -22,10 +15,6 @@ export default function PostHelpPage() {
   const [tag, setTag] = useState<string>("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [rewardType, setRewardType] = useState("");
-  const [rewardAmount, setRewardAmount] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newPostId, setNewPostId] = useState<string | null>(null);
@@ -41,10 +30,6 @@ export default function PostHelpPage() {
         title: title.trim(),
         body: body.trim() || undefined,
         tag,
-        reward_type: rewardType || undefined,
-        reward_amount: rewardAmount || undefined,
-        scheduled_date: date || undefined,
-        scheduled_time: time || undefined,
       });
       setNewPostId(postId);
       setSubmitted(true);
@@ -99,15 +84,9 @@ export default function PostHelpPage() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 sticky top-0 bg-background z-10">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer"
-          >
-            ← 戻る
-          </button>
+          <button onClick={() => router.back()} className="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer">← 戻る</button>
           <div className="text-base font-bold text-foreground">困りごとを書く</div>
           <div className="w-10" />
         </div>
@@ -130,7 +109,7 @@ export default function PostHelpPage() {
                     : "bg-background text-gray-600 border-gray-100"
                 }`}
               >
-                {TAG_ICON[t]} {t}
+                {TAG_ICON[t] || "💬"} {t}
               </button>
             ))}
           </div>
@@ -164,64 +143,6 @@ export default function PostHelpPage() {
             rows={4}
             className="w-full px-3.5 py-3 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 transition-colors bg-background resize-none"
           />
-        </div>
-
-        {/* Reward */}
-        <div>
-          <label className="text-xs text-gray-400 font-medium mb-2 block">
-            お礼・報酬
-          </label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {REWARD_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setRewardType(opt.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs border cursor-pointer transition-all ${
-                  rewardType === opt.id
-                    ? "bg-primary-50 text-primary-800 border-primary-200 font-medium"
-                    : "bg-background text-gray-600 border-gray-100"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {rewardType && REWARD_OPTIONS.find((o) => o.id === rewardType)?.placeholder && (
-            <input
-              type="text"
-              value={rewardAmount}
-              onChange={(e) => setRewardAmount(e.target.value)}
-              placeholder={REWARD_OPTIONS.find((o) => o.id === rewardType)?.placeholder}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-            />
-          )}
-        </div>
-
-        {/* Date / Time */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-xs text-gray-400 font-medium mb-2 block">
-              希望日
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground focus:outline-none focus:border-primary-200 bg-background"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="text-xs text-gray-400 font-medium mb-2 block">
-              希望時間
-            </label>
-            <input
-              type="text"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              placeholder="例: 14:00〜"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-            />
-          </div>
         </div>
 
         {/* Submit */}

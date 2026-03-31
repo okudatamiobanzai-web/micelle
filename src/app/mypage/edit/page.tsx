@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
-import { PortfolioEditor } from "@/components/profile/PortfolioEditor";
 import { SKILL_ICON } from "@/lib/constants";
 import { useAuth } from "@/components/AuthProvider";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
-import { fetchProfile, updateProfile, fetchPortfolio, addPortfolioItem, deletePortfolioItem } from "@/lib/data";
-import type { Profile, PortfolioItem, PortfolioItemType } from "@/lib/types";
+import { fetchProfile, updateProfile } from "@/lib/data";
+import type { Profile } from "@/lib/types";
 
 const ALL_SKILLS = [
   "デザイン", "保育", "送迎", "力仕事", "DIY", "除雪",
@@ -22,16 +21,12 @@ export default function EditProfilePage() {
   const [loading, setLoading] = useState(true);
 
   const [displayName, setDisplayName] = useState("");
-  const [avatarChar, setAvatarChar] = useState("？");
   const [area, setArea] = useState("");
   const [aboutMe, setAboutMe] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [pubInstagram, setPubInstagram] = useState("");
   const [pubTwitter, setPubTwitter] = useState("");
   const [pubWebsite, setPubWebsite] = useState("");
-  const [privLine, setPrivLine] = useState("");
-  const [privFacebook, setPrivFacebook] = useState("");
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -41,24 +36,17 @@ export default function EditProfilePage() {
 
     async function load() {
       try {
-        const [p, portfolio] = await Promise.all([
-          fetchProfile(user!.id),
-          fetchPortfolio(user!.id),
-        ]);
+        const p = await fetchProfile(user!.id);
         if (p) {
           setProfile(p);
           setDisplayName(p.display_name);
-          setAvatarChar(p.avatar_char);
           setArea(p.area || "");
           setAboutMe(p.about_me || "");
           setSkills(p.can || []);
           setPubInstagram(p.sns_public?.instagram || "");
           setPubTwitter(p.sns_public?.twitter || "");
           setPubWebsite(p.sns_public?.website || "");
-          setPrivLine(p.sns_private?.line || "");
-          setPrivFacebook(p.sns_private?.facebook || "");
         }
-        setPortfolioItems(portfolio);
       } catch (e) {
         // load failed
       } finally {
@@ -74,51 +62,21 @@ export default function EditProfilePage() {
     );
   };
 
-  const handleAddPortfolio = async (item: { type: PortfolioItemType; title?: string; description?: string; url?: string; file?: File }) => {
-    if (!user) return;
-    try {
-      const newItem = await addPortfolioItem({
-        profile_id: user.id,
-        type: item.type,
-        title: item.title,
-        description: item.description,
-        url: item.url,
-        sort_order: portfolioItems.length,
-      });
-      setPortfolioItems((prev) => [...prev, newItem]);
-    } catch (e) {
-      alert("追加に失敗しました。");
-    }
-  };
-
-  const handleDeletePortfolio = async (id: string) => {
-    try {
-      await deletePortfolioItem(id);
-      setPortfolioItems((prev) => prev.filter((i) => i.id !== id));
-    } catch (e) {
-      alert("削除に失敗しました。");
-    }
-  };
-
   const handleSave = async () => {
     if (!user || saving) return;
     setSaving(true);
     try {
+      const snsPublic: Record<string, string> = {};
+      if (pubInstagram) snsPublic.instagram = pubInstagram;
+      if (pubTwitter) snsPublic.twitter = pubTwitter;
+      if (pubWebsite) snsPublic.website = pubWebsite;
+
       await updateProfile(user.id, {
         display_name: displayName.trim(),
-        avatar_char: avatarChar,
         area: area.trim() || undefined,
         about_me: aboutMe.trim() || undefined,
         can: skills,
-        sns_public: {
-          ...(pubInstagram && { instagram: pubInstagram }),
-          ...(pubTwitter && { twitter: pubTwitter }),
-          ...(pubWebsite && { website: pubWebsite }),
-        },
-        sns_private: {
-          ...(privLine && { line: privLine }),
-          ...(privFacebook && { facebook: privFacebook }),
-        },
+        sns_public: snsPublic,
       });
       setSaved(true);
       setTimeout(() => {
@@ -146,7 +104,6 @@ export default function EditProfilePage() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 sticky top-0 bg-background z-10">
         <div className="flex items-center justify-between">
           <button
@@ -163,13 +120,13 @@ export default function EditProfilePage() {
       <div className="p-4 space-y-6">
         {/* Avatar */}
         <div className="flex flex-col items-center gap-3">
-          <Orb ch={avatarChar} dots={0} size={80} colorClass="primary" imageUrl={profile?.picture_url} />
+          <Orb ch={profile?.avatar_char || "？"} dots={0} size={80} colorClass="primary" imageUrl={profile?.picture_url} />
           {profile?.picture_url && (
             <div className="text-[11px] text-gray-400">LINEのプロフィール写真を使用中</div>
           )}
         </div>
 
-        {/* Basic info */}
+        {/* Display name */}
         <div>
           <label className="text-xs text-gray-400 font-medium mb-1.5 block">
             表示名 <span className="text-coral-400">*</span>
@@ -182,6 +139,7 @@ export default function EditProfilePage() {
           />
         </div>
 
+        {/* Area */}
         <div>
           <label className="text-xs text-gray-400 font-medium mb-1.5 block">エリア</label>
           <input
@@ -228,11 +186,8 @@ export default function EditProfilePage() {
         {/* Public SNS */}
         <div>
           <label className="text-xs text-gray-400 font-medium mb-1 block">
-            公開SNS <span className="text-[10px] text-gray-200">（誰でも見える）</span>
+            SNS <span className="text-[10px] text-gray-200">（誰でも見える）</span>
           </label>
-          <div className="text-[11px] text-gray-200 mb-2">
-            ポートフォリオとして公開したいアカウント
-          </div>
           <div className="space-y-2">
             {([
               { label: "📸 Instagram", value: pubInstagram, setter: setPubInstagram },
@@ -253,54 +208,14 @@ export default function EditProfilePage() {
           </div>
         </div>
 
-        {/* Private SNS */}
-        <div>
-          <label className="text-xs text-gray-400 font-medium mb-1 block">
-            連絡先 <span className="text-[10px] text-coral-400">🔒 マッチ後のみ公開</span>
-          </label>
-          <div className="text-[11px] text-gray-200 mb-2">
-            マッチした相手にだけ表示されます。最低1つ登録してください。
-          </div>
-          <div className="space-y-2">
-            {([
-              { label: "💬 LINE", value: privLine, setter: setPrivLine, placeholder: "LINE ID" },
-              { label: "📘 Facebook", value: privFacebook, setter: setPrivFacebook, placeholder: "ユーザー名" },
-            ] as const).map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span className="text-xs w-24 text-gray-600 shrink-0">{item.label}</span>
-                <input
-                  type="text"
-                  value={item.value}
-                  onChange={(e) => item.setter(e.target.value)}
-                  placeholder={item.placeholder}
-                  className="flex-1 px-3 py-2.5 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-primary-200 bg-background"
-                />
-              </div>
-            ))}
-          </div>
-          {!privLine && !privFacebook && (
-            <div className="text-xs text-coral-400 mt-1.5">
-              連絡先を最低1つ登録してください
-            </div>
-          )}
-        </div>
-
-        {/* Portfolio */}
-        <PortfolioEditor
-          items={portfolioItems}
-          onAdd={handleAddPortfolio}
-          onDelete={handleDeletePortfolio}
-          getImageUrl={(p) => p}
-        />
-
         {/* Save */}
         <button
           onClick={handleSave}
-          disabled={!displayName.trim() || (!privLine && !privFacebook) || saving}
+          disabled={!displayName.trim() || saving}
           className={`w-full p-3.5 rounded-xl text-[15px] font-medium border-none cursor-pointer transition-all ${
             saved
               ? "bg-primary-50 text-primary-600"
-              : displayName.trim() && (privLine || privFacebook) && !saving
+              : displayName.trim() && !saving
                 ? "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}

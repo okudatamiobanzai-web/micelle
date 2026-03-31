@@ -3,22 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SkillBadge } from "@/components/ui/SkillBadge";
-import { GiftedTags } from "@/components/ui/GiftedTags";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
-import { StatsGrid } from "@/components/profile/StatsGrid";
 import { useAuth } from "@/components/AuthProvider";
-import { fetchProfile, fetchPosts, fetchProfileStats } from "@/lib/data";
+import { fetchProfile, fetchPosts } from "@/lib/data";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { logout } from "@/lib/liff";
 import type { Profile, Post } from "@/lib/types";
 
 export default function MyPage() {
   const router = useRouter();
-  const { user, lineProfile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [mySkillPosts, setMySkillPosts] = useState<Post[]>([]);
-  const [myHelpPosts, setMyHelpPosts] = useState<Post[]>([]);
-  const [stats, setStats] = useState({ completedHelp: 0, completedReq: 0, referrals: 0, tagCount: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,21 +23,12 @@ export default function MyPage() {
 
     async function load() {
       try {
-        const [p, skillPosts, helpPosts, profileStats] = await Promise.all([
+        const [p, skillPosts] = await Promise.all([
           fetchProfile(user!.id),
           fetchPosts({ type: "skill" }),
-          fetchPosts({ type: "help", status: "resolved" }),
-          fetchProfileStats(user!.id),
         ]);
         setProfile(p);
         setMySkillPosts(skillPosts.filter((sp) => sp.author_id === user!.id));
-        setMyHelpPosts(helpPosts.filter((hp) => hp.helper_id === user!.id));
-        setStats({
-          completedHelp: profileStats.completed_help,
-          completedReq: profileStats.completed_req,
-          referrals: profileStats.referrals,
-          tagCount: profileStats.tag_count,
-        });
       } catch (e) {
         // load failed
       } finally {
@@ -76,19 +63,10 @@ export default function MyPage() {
           dots={0}
           colorClass="primary"
           area={profile.area || ""}
-          isMilkEndorsed={profile.is_milk_endorsed}
           pictureUrl={profile.picture_url}
           snsPublic={profile.sns_public}
-          snsPrivate={profile.sns_private}
-          isMatched={true}
           showEditButton
           onEdit={() => router.push("/mypage/edit")}
-        />
-        <StatsGrid
-          completedHelp={stats.completedHelp}
-          completedReq={stats.completedReq}
-          referrals={stats.referrals}
-          tagCount={stats.tagCount}
         />
       </div>
 
@@ -130,37 +108,6 @@ export default function MyPage() {
             ))}
           </div>
         )}
-
-        {/* My help history */}
-        {myHelpPosts.length > 0 && (
-          <div>
-            <div className="text-xs text-gray-400 mb-2 font-medium">お手伝い実績</div>
-            {myHelpPosts.map((hp) => (
-              <div
-                key={hp.id}
-                onClick={() => router.push(`/help/${hp.id}`)}
-                className="p-3 bg-surface rounded-xl cursor-pointer active:scale-[0.98] transition-all mb-2"
-              >
-                <div className="text-sm font-medium text-foreground">{hp.title}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">
-                  {new Date(hp.updated_at).toLocaleDateString("ja-JP")}完了
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Menu items */}
-        <div className="space-y-1 pt-2">
-          <div
-            onClick={() => router.push("/notifications")}
-            className="flex items-center gap-3 p-3 rounded-xl cursor-pointer active:bg-gray-50 transition-colors"
-          >
-            <span className="text-base">🔔</span>
-            <span className="text-sm text-foreground">通知</span>
-            <span className="ml-auto text-gray-200 text-sm">›</span>
-          </div>
-        </div>
 
         {/* Logout */}
         <div className="pt-4 border-t border-gray-100 mt-4">

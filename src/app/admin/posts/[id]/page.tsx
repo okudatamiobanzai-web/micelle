@@ -2,32 +2,28 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Orb } from "@/components/ui/Orb";
 import { Badge } from "@/components/ui/Badge";
-import { fetchPost, fetchPeople, addComment } from "@/lib/data";
+import { fetchPost, fetchPeople } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { TAG_ICON, TAG_BADGE } from "@/lib/constants";
-import type { Post, Comment, Report, Profile } from "@/lib/types";
+import type { Post, Profile } from "@/lib/types";
 
 const STATUS_OPTIONS = ["open", "active", "matched", "resolved", "closed"];
 const STATUS_LABEL: Record<string, string> = {
-  open: "募集中", active: "公開中", matched: "マッチ済", resolved: "完了", closed: "終了",
+  open: "募集中", active: "公開中", matched: "対応中", resolved: "完了", closed: "終了",
 };
 
 export default function AdminPostDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params);
   const router = useRouter();
 
-  const [post, setPost] = useState<(Post & { comments: Comment[]; reports: Report[] }) | null>(null);
+  const [post, setPost] = useState<Post | null>(null);
   const [people, setPeople] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [status, setStatus] = useState("open");
-  const [milkComment, setMilkComment] = useState("");
-  const [refUser, setRefUser] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [commentPosting, setCommentPosting] = useState(false);
   const [matchUser, setMatchUser] = useState("");
   const [matching, setMatching] = useState(false);
   const [matchDone, setMatchDone] = useState(false);
@@ -37,35 +33,16 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
       .then(([postData, peopleData]) => {
         setPost(postData);
         setPeople(peopleData);
-        if (postData) {
-          setStatus(postData.status);
-        }
+        if (postData) setStatus(postData.status);
       })
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) {
-    return <div className="p-10 text-center text-gray-400">読み込み中...</div>;
-  }
-
-  if (!post) {
-    return <div className="p-10 text-center text-gray-400">投稿が見つかりません</div>;
-  }
+  if (loading) return <div className="p-10 text-center text-gray-400">読み込み中...</div>;
+  if (!post) return <div className="p-10 text-center text-gray-400">投稿が見つかりません</div>;
 
   const tag = post.tag || "";
   const badge = TAG_BADGE[tag] || { bg: "bg-gray-50", fg: "text-gray-600" };
-
-  const rewardLabel = post.reward_amount
-    ? post.reward_type === "hourly"
-      ? `時給${post.reward_amount}`
-      : post.reward_type === "fixed"
-        ? post.reward_amount
-        : post.reward_type === "free"
-          ? "無償"
-          : "実費"
-    : post.reward_type === "free"
-      ? "無償"
-      : null;
 
   const handleSave = async () => {
     if (saving) return;
@@ -78,7 +55,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
       if (error) throw error;
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (e) {
+    } catch {
       alert("保存に失敗しました");
     } finally {
       setSaving(false);
@@ -87,7 +64,8 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
 
   const handleMatch = async () => {
     if (!matchUser || matching || !post) return;
-    if (!confirm(`${people.find(p => p.id === matchUser)?.display_name}さんとマッチさせますか？`)) return;
+    const targetPerson = people.find(p => p.id === matchUser);
+    if (!confirm(`${targetPerson?.display_name}さんとマッチさせますか？`)) return;
     setMatching(true);
     try {
       const res = await fetch("/api/admin/match", {
@@ -102,37 +80,11 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
       if (!res.ok) throw new Error("Match failed");
       setMatchDone(true);
       setStatus("matched");
-      alert("マッチしました！双方にLINE通知を送りました。");
-    } catch (e) {
+      alert("マッチしました！双方にSlack通知を送りました。");
+    } catch {
       alert("マッチングに失敗しました");
     } finally {
       setMatching(false);
-    }
-  };
-
-  const handlePostComment = async () => {
-    if (!milkComment.trim() || commentPosting) return;
-    setCommentPosting(true);
-    try {
-      // Get admin user's ID for comment author
-      const { data: { user: adminUser } } = await supabase.auth.getUser();
-      const commentAuthorId = adminUser?.id || post.author_id;
-      const comment = await addComment({
-        post_id: id,
-        author_id: commentAuthorId,
-        body: milkComment.trim(),
-        is_milk_admin: true,
-        ref_user_id: refUser || undefined,
-      });
-      setPost((prev) =>
-        prev ? { ...prev, comments: [...prev.comments, comment] } : prev
-      );
-      setMilkComment("");
-      setRefUser("");
-    } catch (e) {
-      alert("コメント投稿に失敗しました");
-    } finally {
-      setCommentPosting(false);
     }
   };
 
@@ -147,7 +99,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
 
       <div className="grid grid-cols-3 gap-6">
         {/* Left: Post content */}
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2">
           <div className="bg-white p-5 rounded-xl shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               {tag && (
@@ -161,102 +113,38 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
               }`}>
                 {post.type === "help" ? "困りごと" : "できます"}
               </span>
+              <span className="text-xs px-2 py-1 rounded-lg bg-gray-50 text-gray-600 ml-auto">
+                {STATUS_LABEL[post.status] || post.status}
+              </span>
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">{post.title}</h2>
-            {post.body && <div className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{post.body}</div>}
+            {post.body && (
+              <div className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{post.body}</div>
+            )}
+
+            {post.pricing && (
+              <div className="text-sm font-medium text-skill-600 bg-skill-50 px-3 py-2 rounded-lg inline-block mb-4">
+                {post.pricing}
+              </div>
+            )}
 
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
               <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary-800">
                 {post.author?.avatar_char || "?"}
               </div>
               <div>
-                <div className="text-sm font-medium text-foreground">
-                  {post.author?.display_name || "—"}
-                </div>
+                <div className="text-sm font-medium text-foreground">{post.author?.display_name || "—"}</div>
                 <div className="text-xs text-gray-400">
                   {new Date(post.created_at).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
                 </div>
               </div>
-              {rewardLabel && (
-                <div className="ml-auto text-sm font-semibold text-primary-600">{rewardLabel}</div>
-              )}
             </div>
-          </div>
-
-          {/* Existing comments */}
-          {post.comments.length > 0 && (
-            <div className="bg-white p-5 rounded-xl shadow-sm">
-              <h3 className="text-sm font-medium text-foreground mb-3">やりとり</h3>
-              <div className="space-y-3">
-                {post.comments.map((c) => (
-                  <div key={c.id} className="flex gap-2.5 p-3 bg-gray-50 rounded-xl">
-                    <Orb ch={c.author?.avatar_char || "?"} dots={0} size={28} colorClass="primary" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-medium text-foreground">{c.author?.display_name || "—"}</span>
-                        {c.is_milk_admin && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-50 text-primary-800 font-medium">
-                            milk運営
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">{c.body}</div>
-                      {c.ref_user && (
-                        <div className="mt-1 text-xs text-primary-600 font-medium">
-                          🔗 {c.ref_user.display_name}さんを紹介
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Post milk comment */}
-          <div className="bg-white p-5 rounded-xl shadow-sm">
-            <h3 className="text-sm font-medium text-foreground mb-3">milk運営としてコメント</h3>
-            <textarea
-              value={milkComment}
-              onChange={(e) => setMilkComment(e.target.value)}
-              rows={3}
-              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm text-foreground focus:outline-none focus:border-primary-200 bg-white resize-none mb-3"
-              placeholder="milk運営としてのコメントを書く..."
-            />
-
-            {/* Referral */}
-            <div className="mb-3">
-              <label className="text-xs text-gray-400 mb-1.5 block">つなぎ（任意）</label>
-              <select
-                value={refUser}
-                onChange={(e) => setRefUser(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-foreground bg-white"
-              >
-                <option value="">紹介する人を選択...</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.display_name}{p.can?.length ? `（${p.can.join("・")}）` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={handlePostComment}
-              disabled={!milkComment.trim() || commentPosting}
-              className={`px-6 py-2.5 rounded-xl text-sm font-medium border-none cursor-pointer ${
-                milkComment.trim() && !commentPosting
-                  ? "bg-primary-400 text-white"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              {commentPosting ? "投稿中..." : "💬 コメント投稿"}
-            </button>
           </div>
         </div>
 
-        {/* Right: Status control */}
+        {/* Right: Controls */}
         <div className="space-y-6">
+          {/* Status */}
           <div className="bg-white p-5 rounded-xl shadow-sm">
             <h3 className="text-sm font-medium text-foreground mb-3">ステータス変更</h3>
             <div className="space-y-2">
@@ -274,13 +162,23 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
                 </button>
               ))}
             </div>
+            <button
+              onClick={handleSave}
+              className={`w-full mt-3 py-3 rounded-xl text-sm font-medium border-none cursor-pointer transition-all ${
+                saved
+                  ? "bg-primary-50 text-primary-600"
+                  : "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
+              }`}
+            >
+              {saved ? "✓ 保存しました" : saving ? "保存中..." : "変更を保存"}
+            </button>
           </div>
 
-          {/* Match section */}
+          {/* Match */}
           {post.status !== "matched" && post.status !== "resolved" && (
             <div className="bg-white p-5 rounded-xl shadow-sm border-2 border-primary-100">
               <h3 className="text-sm font-bold text-foreground mb-1">🤝 マッチさせる</h3>
-              <p className="text-xs text-gray-400 mb-3">選んだ人とマッチさせ、双方にLINE通知を送ります</p>
+              <p className="text-xs text-gray-400 mb-3">選んだ人とマッチさせ、Slackに通知します</p>
               <select
                 value={matchUser}
                 onChange={(e) => setMatchUser(e.target.value)}
@@ -289,7 +187,7 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
                 <option value="">マッチさせる人を選択...</option>
                 {people.filter(p => p.id !== post.author_id).map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.display_name}{p.can?.length ? `（${p.can.slice(0,2).join("・")}）` : ""}
+                    {p.display_name}{p.can?.length ? `（${p.can.slice(0, 2).join("・")}）` : ""}
                   </option>
                 ))}
               </select>
@@ -308,24 +206,6 @@ export default function AdminPostDetailPage(props: { params: Promise<{ id: strin
               </button>
             </div>
           )}
-
-          {post.type === "help" && rewardLabel && (
-            <div className="bg-white p-5 rounded-xl shadow-sm">
-              <div className="text-xs text-gray-400 mb-1">報酬</div>
-              <div className="text-lg font-bold text-primary-600">{rewardLabel}</div>
-            </div>
-          )}
-
-          <button
-            onClick={handleSave}
-            className={`w-full py-3 rounded-xl text-sm font-medium border-none cursor-pointer transition-all ${
-              saved
-                ? "bg-primary-50 text-primary-600"
-                : "bg-primary-400 text-white shadow-[0_2px_8px_rgba(29,158,117,.26)]"
-            }`}
-          >
-            {saved ? "✓ 保存しました" : saving ? "保存中..." : "変更を保存"}
-          </button>
         </div>
       </div>
     </div>

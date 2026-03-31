@@ -85,11 +85,7 @@ export default function AdminUsersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {person.is_milk_endorsed ? (
-                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary-50 text-primary-800 font-medium">承認済</span>
-                  ) : (
-                    <span className="text-xs text-gray-200">—</span>
-                  )}
+                  <span className="text-xs text-gray-200">—</span>
                 </td>
               </tr>
             ))}

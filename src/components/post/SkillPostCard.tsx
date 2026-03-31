@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Orb } from "@/components/ui/Orb";
 import { SkillBadge } from "@/components/ui/SkillBadge";
-import { MilkBadge } from "@/components/ui/MilkBadge";
 import type { Post } from "@/lib/types";
 
 interface SkillPostCardProps {
@@ -37,25 +36,19 @@ export function SkillPostCard({ post: p, onSelect }: SkillPostCardProps) {
             </div>
           )}
 
-          {/* Skills */}
           <div className="flex gap-1.5 flex-wrap mb-2">
             {(p.skills || []).map((s) => (
               <SkillBadge key={s} skill={s} variant="compact" />
             ))}
           </div>
 
-          {/* Author + pricing */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-foreground">{author.display_name}</span>
-              {author.is_milk_endorsed && <MilkBadge />}
-            </div>
+            <span className="text-xs font-medium text-foreground">{author.display_name}</span>
             <div className="text-xs text-skill-600 font-medium">{p.pricing}</div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-skill-100/30">
         <span className="text-[11px] text-gray-400 shrink-0">
           🙋 {p.interested_count ?? 0}人が興味
