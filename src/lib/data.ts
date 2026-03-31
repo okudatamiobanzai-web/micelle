@@ -93,7 +93,10 @@ export async function createSkillPost(params: {
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    console.error("createSkillPost error:", JSON.stringify(error));
+    throw error;
+  }
   return data.id;
 }
 
