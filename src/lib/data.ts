@@ -68,6 +68,7 @@ export async function createHelpPost(params: {
     .from("posts")
     .insert({
       type: "help",
+      status: "open",
       ...params,
     })
     .select("id")
@@ -87,6 +88,7 @@ export async function createSkillPost(params: {
     .from("posts")
     .insert({
       type: "skill",
+      status: "active",
       ...params,
     })
     .select("id")
