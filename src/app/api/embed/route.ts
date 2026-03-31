@@ -84,11 +84,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (type === "twitter") {
-    const data = await fetchOEmbed(
-      `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&dnt=true&theme=light&omit_script=true`
-    );
-    if (!data?.html) return NextResponse.json({ error: "failed" }, { status: 502 });
-    return NextResponse.json({ type: "twitter", html: data.html });
+    const idMatch = url.match(/\/status\/(\d+)/);
+    const tweetId = idMatch?.[1];
+    if (!tweetId) return NextResponse.json({ error: "invalid url" }, { status: 400 });
+    return NextResponse.json({ type: "twitter", tweetId });
   }
 
   if (type === "instagram") {

@@ -5,9 +5,9 @@ import { useState, useEffect, useRef } from "react";
 interface EmbedData {
   type: "youtube" | "twitter" | "instagram" | "unknown";
   html?: string;
+  tweetId?: string;
   title?: string;
   author_name?: string;
-  thumbnail_url?: string;
   image?: string;
   description?: string;
   url?: string;
@@ -17,29 +17,42 @@ interface EmbedCardProps {
   url: string;
 }
 
-// Load Twitter widgets.js once globally
-let twitterScriptLoaded = false;
-function loadTwitterScript(cb: () => void) {
-  if ((window as any).twttr?.widgets) { cb(); return; }
-  if (twitterScriptLoaded) {
-    // Script is loading, poll
-    const interval = setInterval(() => {
-      if ((window as any).twttr?.widgets) { clearInterval(interval); cb(); }
-    }, 100);
-    return;
-  }
-  twitterScriptLoaded = true;
-  const s = document.createElement("script");
-  s.src = "https://platform.twitter.com/widgets.js";
-  s.async = true;
-  s.onload = cb;
-  document.head.appendChild(s);
+let twitterScriptPromise: Promise<void> | null = null;
+function loadTwitterScript(): Promise<void> {
+  if ((window as any).twttr?.widgets) return Promise.resolve();
+  if (twitterScriptPromise) return twitterScriptPromise;
+  twitterScriptPromise = new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = "https://platform.twitter.com/widgets.js";
+    s.async = true;
+    s.onload = () => resolve();
+    document.head.appendChild(s);
+  });
+  return twitterScriptPromise;
+}
+
+function TwitterEmbed({ tweetId }: { tweetId: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadTwitterScript().then(() => {
+      if (cancelled || !containerRef.current) return;
+      containerRef.current.innerHTML = "";
+      (window as any).twttr.widgets.createTweet(tweetId, containerRef.current, {
+        dnt: true,
+        theme: "light",
+      });
+    });
+    return () => { cancelled = true; };
+  }, [tweetId]);
+
+  return <div ref={containerRef} className="rounded-xl overflow-hidden min-h-[100px]" />;
 }
 
 export function EmbedCard({ url }: EmbedCardProps) {
   const [data, setData] = useState<EmbedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/embed?url=${encodeURIComponent(url)}`)
@@ -48,16 +61,6 @@ export function EmbedCard({ url }: EmbedCardProps) {
       .catch(() => setData({ type: "unknown", url }))
       .finally(() => setLoading(false));
   }, [url]);
-
-  useEffect(() => {
-    if (data?.type === "twitter" && data.html && containerRef.current) {
-      loadTwitterScript(() => {
-        if (containerRef.current) {
-          (window as any).twttr?.widgets?.load(containerRef.current);
-        }
-      });
-    }
-  }, [data]);
 
   if (loading) {
     return <div className="rounded-xl bg-gray-50 h-16 animate-pulse" />;
@@ -89,14 +92,8 @@ export function EmbedCard({ url }: EmbedCardProps) {
     );
   }
 
-  if (data.type === "twitter" && data.html) {
-    return (
-      <div
-        ref={containerRef}
-        className="rounded-xl overflow-hidden"
-        dangerouslySetInnerHTML={{ __html: data.html }}
-      />
-    );
+  if (data.type === "twitter" && data.tweetId) {
+    return <TwitterEmbed tweetId={data.tweetId} />;
   }
 
   if (data.type === "instagram") {
@@ -105,7 +102,7 @@ export function EmbedCard({ url }: EmbedCardProps) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors no-underline"
+        className="flex gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors"
         style={{ textDecoration: "none" }}
       >
         {data.image && (
@@ -133,7 +130,6 @@ export function EmbedCard({ url }: EmbedCardProps) {
     );
   }
 
-  // fallback: plain link
   return (
     <a
       href={url}
