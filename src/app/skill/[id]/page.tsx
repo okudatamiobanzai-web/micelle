@@ -55,6 +55,7 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
           postAuthor: person?.display_name || "",
           postId: post.id,
           postType: "skill",
+          authorId: post.author_id,
         }),
       });
       setInterested(true);

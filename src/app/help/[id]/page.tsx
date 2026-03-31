@@ -46,6 +46,7 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
           postAuthor: post.author?.display_name || "",
           postId: post.id,
           postType: "help",
+          authorId: post.author_id,
         }),
       });
       setOffered(true);
