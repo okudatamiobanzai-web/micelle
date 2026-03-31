@@ -87,7 +87,23 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
   return (
     <div className="pb-20">
       <div className="px-4 pt-4 pb-3.5 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer">← 戻る</button>
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.back()} className="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer">← 戻る</button>
+          <button
+            onClick={() => {
+              const shareUrl = `https://micelle.shirubelab.jp/skill/${post.id}`;
+              if (navigator.share) {
+                navigator.share({ title: post.title, text: `${person.display_name}さんの「${post.title}」`, url: shareUrl });
+              } else {
+                navigator.clipboard.writeText(shareUrl);
+                alert("URLをコピーしました");
+              }
+            }}
+            className="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer"
+          >
+            シェア ↗
+          </button>
+        </div>
         <div className="flex gap-1.5 mt-2.5 mb-2">
           <Badge text="できます" bgClass="bg-skill-100" fgClass="text-skill-800" icon="✋" />
         </div>
