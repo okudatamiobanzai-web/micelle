@@ -122,6 +122,15 @@ export default function SkillDetailClient({ id }: { id: string }) {
       </div>
 
       <div className="p-4">
+        {post.status === "matched" && (
+          <div className="mb-4 p-4 rounded-xl bg-primary-50 border border-primary-100">
+            <div className="text-sm font-semibold text-primary-800 mb-1">✓ マッチング済み</div>
+            <div className="text-xs text-primary-600 leading-relaxed">
+              管理者が相手をつなぎました。LINEでご連絡しますのでしばらくお待ちください。
+            </div>
+          </div>
+        )}
+
         {post.body && (
           <div className="text-sm leading-loose text-gray-600 mb-4 whitespace-pre-wrap">{post.body}</div>
         )}

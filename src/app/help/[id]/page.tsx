@@ -107,6 +107,22 @@ export default function HelpDetailPage(props: { params: Promise<{ id: string }> 
         </div>
       )}
 
+      {post.status === "matched" && (
+        <div className="mx-4 mb-4 p-4 rounded-xl bg-primary-50 border border-primary-100">
+          <div className="text-sm font-semibold text-primary-800 mb-1">✓ 対応中</div>
+          <div className="text-xs text-primary-600 leading-relaxed">
+            管理者がマッチングしました。LINEでご連絡しますのでしばらくお待ちください。
+          </div>
+        </div>
+      )}
+
+      {post.status === "resolved" && (
+        <div className="mx-4 mb-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+          <div className="text-sm font-semibold text-gray-600 mb-1">✅ 解決済み</div>
+          <div className="text-xs text-gray-400">この困りごとは解決されました。</div>
+        </div>
+      )}
+
       {(post.status === "open" || post.status === "active") && user?.id !== post.author_id && (
         <div className="px-4 pb-6">
           {!user ? (
