@@ -27,6 +27,7 @@ export interface Post {
   tag?: string;
   skills: string[];
   pricing?: string;
+  portfolio_links?: string[];
   // Joined data
   author?: Profile;
   interested_count?: number;

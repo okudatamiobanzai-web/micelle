@@ -59,6 +59,7 @@ export async function createSkillPost(params: {
   body?: string;
   skills: string[];
   pricing?: string;
+  portfolio_links?: string[];
 }): Promise<string> {
   const { data, error } = await supabase
     .from("posts")

@@ -19,6 +19,7 @@ export default function PostSkillPage() {
   const [body, setBody] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [pricing, setPricing] = useState("");
+  const [linkInputs, setLinkInputs] = useState<string[]>(["", "", ""]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newPostId, setNewPostId] = useState<string | null>(null);
@@ -35,12 +36,14 @@ export default function PostSkillPage() {
     if (!canSubmit || !user) return;
     setSubmitting(true);
     try {
+      const portfolioLinks = linkInputs.map((l) => l.trim()).filter(Boolean);
       const postId = await createSkillPost({
         author_id: user.id,
         title: title.trim(),
         body: body.trim() || undefined,
         skills,
         pricing: pricing || undefined,
+        portfolio_links: portfolioLinks.length > 0 ? portfolioLinks : undefined,
       });
       setNewPostId(postId);
       setSubmitted(true);
@@ -176,6 +179,30 @@ export default function PostSkillPage() {
             placeholder="例: 要相談 / 初回無料 / 時給1,000円〜"
             className="w-full px-3.5 py-3 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-skill-200 transition-colors bg-background"
           />
+        </div>
+
+        {/* Portfolio Links */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-1 block">
+            ポートフォリオ・実績リンク
+          </label>
+          <div className="text-[11px] text-gray-300 mb-2">X・YouTube・InstagramのURLを貼ってください（最大3件）</div>
+          <div className="space-y-2">
+            {linkInputs.map((link, i) => (
+              <input
+                key={i}
+                type="url"
+                value={link}
+                onChange={(e) => {
+                  const next = [...linkInputs];
+                  next[i] = e.target.value;
+                  setLinkInputs(next);
+                }}
+                placeholder={`例: https://www.youtube.com/watch?v=...`}
+                className="w-full px-3.5 py-3 rounded-xl border border-gray-100 text-sm text-foreground placeholder:text-gray-200 focus:outline-none focus:border-skill-200 transition-colors bg-background"
+              />
+            ))}
+          </div>
         </div>
 
         {/* Submit */}

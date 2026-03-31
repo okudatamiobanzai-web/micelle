@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Orb } from "@/components/ui/Orb";
 import { Badge } from "@/components/ui/Badge";
+import { EmbedCard } from "@/components/ui/EmbedCard";
 import { SKILL_ICON } from "@/lib/constants";
 import { fetchPost, fetchProfile } from "@/lib/data";
 import { useAuth } from "@/components/AuthProvider";
@@ -127,6 +128,17 @@ export default function SkillDetailPage(props: { params: Promise<{ id: string }>
           <div className="mb-4 p-3 bg-surface rounded-[10px]">
             <div className="text-xs text-gray-400 mb-1">料金の目安</div>
             <div className="text-sm font-medium text-foreground">{post.pricing}</div>
+          </div>
+        )}
+
+        {post.portfolio_links && post.portfolio_links.length > 0 && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-400 mb-2">ポートフォリオ・実績</div>
+            <div className="space-y-3">
+              {post.portfolio_links.map((link) => (
+                <EmbedCard key={link} url={link} />
+              ))}
+            </div>
           </div>
         )}
 
