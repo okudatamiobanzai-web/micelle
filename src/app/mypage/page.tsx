@@ -98,12 +98,24 @@ export default function MyPage() {
             {mySkillPosts.map((sp) => (
               <div
                 key={sp.id}
-                onClick={() => router.push(`/skill/${sp.id}`)}
-                className="p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl border border-skill-100/30 cursor-pointer active:scale-[0.98] transition-all mb-2"
+                className="p-3 bg-gradient-to-br from-skill-50 to-background rounded-xl border border-skill-100/30 mb-2"
               >
-                <div className="text-sm font-semibold text-foreground">{sp.title}</div>
-                <div className="text-xs text-skill-600 mt-1">{sp.pricing}</div>
-                <div className="text-[11px] text-gray-400 mt-1">🙋 {sp.interested_count ?? 0}人が興味</div>
+                <div
+                  className="cursor-pointer active:scale-[0.98] transition-all"
+                  onClick={() => router.push(`/skill/${sp.id}`)}
+                >
+                  <div className="text-sm font-semibold text-foreground">{sp.title}</div>
+                  <div className="text-xs text-skill-600 mt-1">{sp.pricing}</div>
+                  <div className="text-[11px] text-gray-400 mt-1">🙋 {sp.interested_count ?? 0}人が興味</div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => router.push(`/skill/${sp.id}/edit`)}
+                    className="text-[11px] text-gray-400 bg-white border border-gray-100 px-3 py-1 rounded-lg cursor-pointer"
+                  >
+                    編集
+                  </button>
+                </div>
               </div>
             ))}
           </div>

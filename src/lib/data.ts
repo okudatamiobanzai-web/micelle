@@ -74,6 +74,20 @@ export async function createSkillPost(params: {
   return data.id;
 }
 
+export async function updateSkillPost(id: string, params: {
+  title: string;
+  body?: string;
+  skills: string[];
+  pricing?: string;
+  portfolio_links?: string[];
+}): Promise<void> {
+  const { error } = await supabase
+    .from("posts")
+    .update({ ...params, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 // ==========================================
 // プロフィール
 // ==========================================
